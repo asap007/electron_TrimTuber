@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="container mx-auto px-4 py-3">
+            <h1 class="text-xl font-bold text-red-600">YouTube Search</h1>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-6 sticky top-16 z-10 bg-gray-100">
+        <form id="search-form" class="max-w-2xl mx-auto">
+            <div class="flex gap-2">
+                <input type="text" 
+                       id="search-input" 
+                       placeholder="Search videos..."
+                       class="flex-1 px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">
+                    Search
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="container mx-auto px-4 pb-8">
+        <div id="videos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <!-- Videos will be inserted here -->
+        </div>
+        <div id="loading-indicator" class="hidden py-8 text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let isLoading = false;
+        let hasMoreVideos = true;
+        let currentQuery = '';
+        let isTrending = true;
+
+        // Format video duration
+        function formatDuration(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Format view count
+        function formatViews(views) {
+            if (views >= 1000000) {
+                return `${(views / 1000000).toFixed(1)}M views`;
+            }
+            if (views >= 1000) {
+                return `${(views / 1000).toFixed(1)}K views`;
+            }
+            return `${views} views`;
+        }
+
+        // Create video card HTML
+        function createVideoCard(video) {
+            return `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
+                    <div class="relative">
+                        <img src="${video.thumbnail}" 
+                             alt="${video.title}"
+                             class="w-full aspect-video object-cover"
+                             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22480%22 height=%22360%22><rect width=%22100%%22 height=%22100%%22 fill=%22%23cccccc%22/></svg>'">
+                        <span class="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 text-sm rounded">
+                            ${formatDuration(video.duration)}
+                        </span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-medium text-sm line-clamp-2 mb-1">${video.title}</h3>
+                        <p class="text-gray-600 text-sm mb-1">${video.channelTitle}</p>
+                        <p class="text-gray-500 text-sm">${formatViews(video.viewCount)}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showLoadingIndicator() {
+            document.getElementById('loading-indicator').classList.remove('hidden');
+        }
+
+        function hideLoadingIndicator() {
+            document.getElementById('loading-indicator').classList.add('hidden');
+        }
+
+        function showError(message) {
+            const container = document.getElementById('videos-container');
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <p class="text-red-500">${message}</p>
+                </div>
+            `;
+        }
+
+        async function loadMoreVideos() {
+            if (isLoading || !hasMoreVideos) return;
+
+            isLoading = true;
+            showLoadingIndicator();
+
+            try {
+                const videos = isTrending 
+                    ? await window.api.getTrending(currentPage)
+                    : await window.api.searchVideos(currentQuery, currentPage);
+
+                if (videos.length === 0) {
+                    hasMoreVideos = false;
+                    hideLoadingIndicator();
+                    return;
+                }
+
+                const container = document.getElementById('videos-container');
+                const videoCards = videos.map(createVideoCard).join('');
+                
+                if (currentPage === 1) {
+                    container.innerHTML = videoCards;
+                } else {
+                    container.insertAdjacentHTML('beforeend', videoCards);
+                }
+
+                currentPage++;
+            } catch (error) {
+                showError('Error loading videos');
+                console.error(error);
+            } finally {
+                isLoading = false;
+                hideLoadingIndicator();
+            }
+        }
+
+        // Handle search
+        async function handleSearch(event) {
+            event.preventDefault();
+            const query = document.getElementById('search-input').value.trim();
+            if (!query) return;
+
+            currentQuery = query;
+            currentPage = 1;
+            hasMoreVideos = true;
+            isTrending = false;
+            
+            const container = document.getElementById('videos-container');
+            container.innerHTML = '';
+            
+            await loadMoreVideos();
+        }
+
+        // Initialize infinite scroll
+        function initInfiniteScroll() {
+            window.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+                if (scrollTop + clientHeight >= scrollHeight - 1000 && !isLoading && hasMoreVideos) {
+                    loadMoreVideos();
+                }
+            });
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMoreVideos(); // Load initial trending videos
+            initInfiniteScroll();
+            const searchForm = document.getElementById('search-form');
+            searchForm.addEventListener('submit', handleSearch);
+        });
+    </script>
+</body>
+</html>
