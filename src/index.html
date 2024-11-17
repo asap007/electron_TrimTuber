@@ -79,22 +79,42 @@
             return `
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
                     <div class="relative">
-                        <img src="${video.thumbnail}" 
-                             alt="${video.title}"
-                             class="w-full aspect-video object-cover"
-                             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22480%22 height=%22360%22><rect width=%22100%%22 height=%22100%%22 fill=%22%23cccccc%22/></svg>'">
-                        <span class="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 text-sm rounded">
+                        <img src="${video.thumbnail}" alt="${video.title}" 
+                            class="w-full h-48 object-cover">
+                        <span class="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white px-2 py-1 rounded text-sm">
                             ${formatDuration(video.duration)}
                         </span>
                     </div>
                     <div class="p-4">
-                        <h3 class="font-medium text-sm line-clamp-2 mb-1">${video.title}</h3>
-                        <p class="text-gray-600 text-sm mb-1">${video.channelTitle}</p>
-                        <p class="text-gray-500 text-sm">${formatViews(video.viewCount)}</p>
+                        <h3 class="font-semibold text-lg mb-2 line-clamp-2">${video.title}</h3>
+                        <p class="text-gray-600 text-sm mb-2">${video.channelTitle}</p>
+                        <div class="flex items-center justify-between">
+                            <div class="text-sm text-gray-500">
+                                ${formatViews(video.viewCount)}
+                            </div>
+                            <button 
+                                onclick="openDownloadPage('${video.id}', '${video.title.replace(/'/g, "\\'")}', '${video.thumbnail}', ${video.duration})"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
+                                Get Video
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
         }
+
+        function openDownloadPage(videoId, title, thumbnail, duration) {
+            const params = new URLSearchParams({
+                videoId: videoId,
+                title: encodeURIComponent(title),
+                thumbnail: thumbnail,
+                duration: duration.toString() // Make sure duration is converted to string
+            });
+            window.location.href = `download.html?${params.toString()}`;
+        }
+
+
+
 
         function showLoadingIndicator() {
             document.getElementById('loading-indicator').classList.remove('hidden');

@@ -1,6 +1,8 @@
 // main.js
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const { dialog } = require('electron');
+const { spawn } = require('child_process');
 const InvidiousAPI = require('./src/js/api.js');
 
 const api = new InvidiousAPI();
@@ -52,4 +54,50 @@ ipcMain.handle('get-trending', async (event, { page }) => {
         console.error('Trending error:', error);
         throw error;
     }
+});
+
+ipcMain.handle('select-folder', async () => {
+    const result = await dialog.showOpenDialog({
+        properties: ['openDirectory']
+    });
+    return !result.canceled ? result.filePaths[0] : null;
+});
+
+
+ipcMain.handle('start-download', async (event, options) => {
+    return new Promise((resolve, reject) => {
+        const pythonScript = path.join(__dirname, 'python', 'downloader.py');
+        const pythonProcess = spawn('python', [
+            pythonScript,
+            JSON.stringify(options)
+        ]);
+
+        let result = '';
+        
+        pythonProcess.stdout.on('data', (data) => {
+            try {
+                const jsonData = JSON.parse(data.toString());
+                if (jsonData.progress) {
+                    // Send progress updates to renderer
+                    event.sender.send('download-progress', jsonData.progress);
+                } else {
+                    result = jsonData;
+                }
+            } catch (e) {
+                console.log('Python output:', data.toString());
+            }
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            console.error('Python error:', data.toString());
+        });
+
+        pythonProcess.on('close', (code) => {
+            if (code === 0 && result.success) {
+                resolve(result);
+            } else {
+                reject(result.error || 'Download failed');
+            }
+        });
+    });
 });

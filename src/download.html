@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Download Video</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.js"></script>
+    <style>
+        .noUi-connect {
+            background: #3b82f6;
+        }
+        .noUi-handle {
+            background: #1d4ed8;
+            border-radius: 50%;
+            box-shadow: none;
+        }
+        .noUi-handle:before, .noUi-handle:after {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <button onclick="window.location.href='index.html'" 
+                class="mb-6 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+            </svg>
+            Back to Search
+        </button>
+
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="relative">
+                    <img id="video-thumbnail" src="" alt="" class="w-full h-64 object-cover">
+                    <div class="absolute inset-0 bg-black bg-opacity-40"></div>
+                    <h1 id="video-title" class="absolute bottom-4 left-4 right-4 text-white text-2xl font-bold line-clamp-2"></h1>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    <!-- Timeline Section -->
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-gray-700">Video Timeline</label>
+                        <div id="timeline" class="mt-2"></div>
+                        <div class="flex justify-between text-sm text-gray-600">
+                            <span id="time-start">0:00</span>
+                            <span id="time-end">0:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Download Options -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Quality Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Quality</label>
+                            <select id="quality" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="highest">Highest</option>
+                                <option value="1080p">1080p</option>
+                                <option value="720p">720p</option>
+                                <option value="480p">480p</option>
+                                <option value="360p">360p</option>
+                            </select>
+                        </div>
+
+                        <!-- Format Selection -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Format</label>
+                            <div class="flex gap-4">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="format" value="video" checked class="text-blue-600 focus:ring-blue-500 h-4 w-4">
+                                    <span class="ml-2">Video</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="format" value="audio" class="text-blue-600 focus:ring-blue-500 h-4 w-4">
+                                    <span class="ml-2">Audio Only</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Output Path -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Output Folder</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="output-path" readonly 
+                                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" 
+                                placeholder="Select a folder">
+                            <button onclick="selectOutputFolder()"
+                                    class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">
+                                Browse
+                            </button>
+                        </div>
+                    </div>
+
+
+                    <!-- Download Button -->
+                    <div class="flex justify-center pt-4">
+                        <button onclick="startDownload()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                            Download
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoId = urlParams.get('videoId');
+            const title = decodeURIComponent(urlParams.get('title'));
+            const thumbnail = urlParams.get('thumbnail');
+            const duration = parseInt(urlParams.get('duration')) || 0;
+
+            // Check if required parameters exist
+            if (!videoId || !title || !thumbnail) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Set video details
+            document.getElementById('video-thumbnail').src = thumbnail;
+            document.getElementById('video-thumbnail').alt = title;
+            document.getElementById('video-title').textContent = title;
+
+            // Initialize timeline slider
+            const timeline = document.getElementById('timeline');
+            noUiSlider.create(timeline, {
+                start: [0, duration],
+                connect: true,
+                range: {
+                    'min': 0,
+                    'max': Math.max(duration, 1) // Ensure we have a valid maximum
+                },
+                step: 1,
+                format: {
+                    to: value => Math.floor(value),
+                    from: value => Math.floor(value)
+                }
+            });
+
+            // Helper function to format time
+            function formatTime(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const secs = Math.floor(seconds % 60);
+                if (hours > 0) {
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                }
+                return `${minutes}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            // Update time labels when slider changes
+            timeline.noUiSlider.on('update', function (values) {
+                document.getElementById('time-start').textContent = formatTime(values[0]);
+                document.getElementById('time-end').textContent = formatTime(values[1]);
+            });
+        });
+
+
+        // Select output folder
+        async function selectOutputFolder() {
+            const folderPath = await window.api.selectFolder();
+            if (folderPath) {
+                document.getElementById('output-path').value = folderPath;
+            }
+        }
+
+        // Start download with selected folder
+        async function startDownload() {
+            const outputPath = document.getElementById('output-path').value;
+
+            if (!outputPath) {
+                alert('Please select an output folder.');
+                return;
+            }
+
+            const timeValues = document.getElementById('timeline').noUiSlider.get();
+            const downloadOptions = {
+                videoId: new URLSearchParams(window.location.search).get('videoId'),
+                quality: document.getElementById('quality').value,
+                format: document.querySelector('input[name="format"]:checked').value,
+                outputPath: outputPath,
+                startTime: parseInt(timeValues[0]),
+                endTime: parseInt(timeValues[1])
+            };
+
+            try {
+                await window.api.startDownload(downloadOptions);
+                alert('Download completed successfully.');
+            } catch (error) {
+                console.error('Download error:', error);
+                alert('An error occurred during download. Check console for details.');
+            }
+        }
+
+    </script>
+</body>
+</html>
