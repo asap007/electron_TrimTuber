@@ -12,5 +12,6 @@ contextBridge.exposeInMainWorld('api', {
         });
     },
     openFile: (path) => ipcRenderer.invoke('open-file', path),
-    openFolder: (path) => ipcRenderer.invoke('open-folder', path)
+    openFolder: (path) => ipcRenderer.invoke('open-folder', path),
+    on: (channel, callback) => ipcRenderer.on(channel, (event, ...args) => callback(...args))
 });

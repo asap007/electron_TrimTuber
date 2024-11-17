@@ -104,31 +104,30 @@ class VideoProcessor:
             raise
 
     def _trim_video(self, input_file_path, output_file_path, start_time, end_time):
-        """Trim video file using FFmpeg"""
+        """Optimized trimming with FFmpeg."""
+        # Use stream copy for faster trimming if re-encoding is not necessary.
         command = [
             self.ffmpeg_path,
             '-ss', str(start_time),
             '-i', input_file_path,
             '-to', str(end_time),
-            '-c:v', 'libx264',
-            '-preset', 'ultrafast',
-            '-crf', '20',
+            '-c:v', 'h264_nvenc',  # Use GPU acceleration if available, fallback to 'libx264'.
+            '-preset', 'fast',
+            '-crf', '23',
             '-c:a', 'aac',
             '-b:a', '128k',
-            '-pix_fmt', 'yuv420p',
             '-movflags', '+faststart',
-            '-copyts',
             '-avoid_negative_ts', 'make_zero',
             output_file_path
         ]
-        
         try:
             creation_flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             subprocess.run(command, creationflags=creation_flags, check=True, 
-                          stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+                        stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         except subprocess.CalledProcessError as e:
             print(f"FFmpeg error: {e.stderr.decode()}")
             raise
+
 
     def _cleanup(self):
         """Cleans up temporary files."""

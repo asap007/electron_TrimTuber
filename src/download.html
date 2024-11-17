@@ -38,8 +38,8 @@
                     </svg>
                 </div>
                 <div class="text-center">
-                    <h3 class="text-lg font-semibold text-gray-900">Processing Video</h3>
-                    <p class="text-sm text-gray-600 mt-1">Please wait while we process your video...</p>
+                    <h3 id="progress-state" class="text-lg font-semibold text-gray-900">Processing Video</h3>
+                    <p id="progress-description" class="text-sm text-gray-600 mt-1">Please wait while we process your video...</p>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2.5">
                     <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
@@ -189,56 +189,76 @@
     <script>
 
             let currentOutputPath = '';
-                    let currentFilePath = '';
+            let currentFilePath = '';
+            let currentPhase = 'processing';
 
-                    // Function to show modal
-                    function showModal() {
-                        document.getElementById('progress-modal').classList.remove('hidden');
-                        document.getElementById('downloading').classList.remove('hidden');
-                        document.getElementById('success').classList.add('hidden');
-                        document.getElementById('error').classList.add('hidden');
-                        document.getElementById('progress-bar').style.width = '0%';
-                        document.getElementById('progress-text').textContent = '0';
-                    }
+            // Function to show modal
+            function showModal() {
+                document.getElementById('progress-modal').classList.remove('hidden');
+                document.getElementById('downloading').classList.remove('hidden');
+                document.getElementById('success').classList.add('hidden');
+                document.getElementById('error').classList.add('hidden');
+                document.getElementById('progress-bar').style.width = '0%';
+                document.getElementById('progress-text').textContent = '0';
+                updatePhase('processing');
+                currentPhase = 'processing';
+            }
+            function updatePhase(phase) {
+                currentPhase = phase;
+                const stateText = {
+                    'processing': 'Processing Video',
+                    'encoding': 'Encoding Video',
+                    'converting': 'Converting Video'
+                };
+                const descriptionText = {
+                    'processing': 'Please wait while we process your video...',
+                    'encoding': 'Please wait while we encode your video...',
+                    'converting': 'Please wait while we convert your video to the final format...'
+                };
+                
+                document.getElementById('progress-state').textContent = stateText[phase];
+                document.getElementById('progress-description').textContent = descriptionText[phase];
+            }
 
-                    // Function to close modal
-                    function closeModal() {
-                        document.getElementById('progress-modal').classList.add('hidden');
-                    }
+            // Function to close modal
+            function closeModal() {
+                document.getElementById('progress-modal').classList.add('hidden');
+            }
 
-                    // Function to update progress
-                    function updateProgress(progress) {
-                        document.getElementById('progress-bar').style.width = `${progress}%`;
-                        document.getElementById('progress-text').textContent = Math.round(progress);
-                    }
+            // Function to update progress
+            function updateProgress(progress) {
+                document.getElementById('progress-bar').style.width = `${progress}%`;
+                document.getElementById('progress-text').textContent = Math.round(progress);
+            }
 
-                    // Function to show success
-                    function showSuccess(filePath) {
-                        currentFilePath = filePath;
-                        document.getElementById('downloading').classList.add('hidden');
-                        document.getElementById('success').classList.remove('hidden');
-                    }
+            // Function to show success
+            function showSuccess(filePath) {
+                currentFilePath = filePath;
+                document.getElementById('downloading').classList.add('hidden');
+                document.getElementById('success').classList.remove('hidden');
+            }
 
-                    // Function to show error
-                    function showError(message) {
-                        document.getElementById('downloading').classList.add('hidden');
-                        document.getElementById('error').classList.remove('hidden');
-                        document.getElementById('error-message').textContent = message;
-                    }
+            // Function to show error
+            function showError(message) {
+                document.getElementById('downloading').classList.add('hidden');
+                document.getElementById('error').classList.remove('hidden');
+                document.getElementById('error-message').textContent = message;
+            }
 
-                    // Function to open the processed file
-                    async function openFile() {
-                        if (currentFilePath) {
-                            await window.api.openFile(currentFilePath);
-                        }
-                    }
+            // Function to open the processed file
+            async function openFile() {
+                if (currentFilePath) {
+                    await window.api.openFile(currentFilePath);
+                }
+            }
 
-                    // Function to open the output folder
-                    async function openOutputFolder() {
-                        if (currentOutputPath) {
-                            await window.api.openFolder(currentOutputPath);
-                        }
-                    }
+            // Function to open the output folder
+            async function openOutputFolder() {
+                if (currentOutputPath) {
+                    await window.api.openFolder(currentOutputPath);
+                }
+            }
+
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const videoId = urlParams.get('videoId');
@@ -324,9 +344,12 @@
             };
 
             try {
-                // Listen for progress updates
                 window.api.onDownloadProgress((progress) => {
                     updateProgress(progress);
+                });
+
+                window.api.on('phase-change', (phase) => {
+                    updatePhase(phase);
                 });
 
                 const result = await window.api.startDownload(downloadOptions);

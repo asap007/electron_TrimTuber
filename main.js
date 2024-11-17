@@ -91,28 +91,72 @@ ipcMain.handle('start-download', async (event, options) => {
         ]);
 
         let lastResult = null;
-        let pythonOutput = ''; // Accumulated output for debugging
+        let buffer = '';
+        let phase = 'processing'; // 'processing', 'encoding', 'converting'
+        let completedPhases = 0;
 
         pythonProcess.stdout.on('data', (data) => {
             const output = data.toString();
-            pythonOutput += output; // Save raw output for debugging
+            buffer += output;
 
-            try {
-                const jsonData = JSON.parse(output);
+            // Check for phase transition
+            if (buffer.includes('Destination:') && phase === 'processing') {
+                phase = 'encoding';
+                event.sender.send('phase-change', 'encoding');
+                event.sender.send('download-progress', 0);
+                buffer = '';
+            }
 
-                if (jsonData.progress !== undefined) {
-                    // Send progress updates
-                    event.sender.send('download-progress', jsonData.progress);
+            let match;
+            const jsonRegex = /\{[^}]*\}/g;
+
+            while ((match = jsonRegex.exec(buffer)) !== null) {
+                try {
+                    const jsonData = JSON.parse(match[0]);
+
+                    if (jsonData.progress !== undefined) {
+                        const currentProgress = parseFloat(jsonData.progress);
+                        
+                        // Handle progress based on current phase
+                        if (currentProgress === 100) {
+                            completedPhases++;
+                            
+                            // If we've completed both download and encoding
+                            if (completedPhases === 2 && phase !== 'converting') {
+                                phase = 'converting';
+                                event.sender.send('phase-change', 'converting');
+                                // Start showing slow progress for converting phase
+                                startConvertingProgress(event);
+                            }
+                        }
+                        
+                        event.sender.send('download-progress', currentProgress);
+                    }
+
+                    if (jsonData.success !== undefined) {
+                        lastResult = jsonData;
+                    }
+
+                    buffer = buffer.slice(match.index + match[0].length);
+                } catch (jsonError) {
+                    console.warn('Partial or invalid JSON:', match[0], jsonError);
                 }
-
-                if (jsonData.success !== undefined) {
-                    lastResult = jsonData; // Capture success
-                }
-            } catch {
-                // Log non-JSON data for debugging
-                console.warn('Non-JSON Python output:', output.trim());
             }
         });
+
+        // Function to simulate progress during converting phase
+        function startConvertingProgress(event) {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 0.5; // Slow increment
+                if (progress <= 99) {
+                    event.sender.send('download-progress', progress);
+                }
+            }, 500); // Update every 500ms
+
+            // Clear interval when process ends
+            pythonProcess.on('close', () => clearInterval(interval));
+        }
 
         pythonProcess.stderr.on('data', (data) => {
             console.error('Python error:', data.toString().trim());
@@ -120,16 +164,18 @@ ipcMain.handle('start-download', async (event, options) => {
 
         pythonProcess.on('close', (code) => {
             if (code === 0 && lastResult && lastResult.success) {
+                // Ensure we show 100% at the end
+                event.sender.send('download-progress', 100);
                 resolve(lastResult);
             } else {
-                const errorMessage = lastResult?.error || `Python script failed with code ${code}. Output: ${pythonOutput}`;
+                const errorMessage = lastResult?.error || `Python script failed with code ${code}.`;
                 reject(new Error(errorMessage));
             }
         });
 
         pythonProcess.on('error', (err) => {
-            console.error('Failed to start Python process:', err.message);
-            reject(new Error('Failed to start the Python script.'));
+            console.error('Failed to start Python:', err.message);
+            reject(new Error('Failed to start Python script.'));
         });
     });
 });
