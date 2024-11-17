@@ -47,7 +47,7 @@ class VideoProcessor:
 
             output_filename = f"trimmed_{datetime.now().strftime('%Y%m%d%H%M%S')}{ext}"
             output_path = os.path.join(output_dir, output_filename)
-            print(f"Resolved output path: {output_path}")
+            print(f"Resolved output path: {output_path}", file=sys.stderr)
 
             if is_audio_only:
                 self._trim_audio(downloaded_path, output_path, start_time, end_time)
@@ -137,8 +137,9 @@ class VideoProcessor:
                 file_path = os.path.join(self.temp_dir, file)
                 if os.path.isfile(file_path):
                     os.remove(file_path)
-            print("Temporary files cleaned up.")
+            print("Temporary files cleaned up.", file=sys.stderr)
         except Exception as e:
-            print(f"Error during cleanup: {e}")
+            print(f"Error during cleanup: {e}", file=sys.stderr)
+
 
     

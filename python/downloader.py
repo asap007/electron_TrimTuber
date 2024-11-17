@@ -1,4 +1,3 @@
-# python/downloader.py
 import sys
 import json
 from worker import VideoProcessor
@@ -18,10 +17,12 @@ def main():
             is_audio_only=input_data['format'] == 'audio'
         )
         
+        # Output result as JSON
         print(json.dumps(result))
 
     except Exception as e:
-        print(json.dumps({'success': False, 'error': str(e)}))
+        # Print errors as JSON
+        print(json.dumps({'success': False, 'error': str(e)}), file=sys.stderr)
 
 if __name__ == "__main__":
     main()

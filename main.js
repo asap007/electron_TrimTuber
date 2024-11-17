@@ -72,32 +72,48 @@ ipcMain.handle('start-download', async (event, options) => {
             JSON.stringify(options)
         ]);
 
-        let result = '';
-        
+        let lastResult = null;
+        let pythonOutput = ''; // Accumulated output for debugging
+
         pythonProcess.stdout.on('data', (data) => {
+            const output = data.toString();
+            pythonOutput += output; // Save raw output for debugging
+
             try {
-                const jsonData = JSON.parse(data.toString());
-                if (jsonData.progress) {
-                    // Send progress updates to renderer
+                const jsonData = JSON.parse(output);
+
+                if (jsonData.progress !== undefined) {
+                    // Send progress updates
                     event.sender.send('download-progress', jsonData.progress);
-                } else {
-                    result = jsonData;
                 }
-            } catch (e) {
-                console.log('Python output:', data.toString());
+
+                if (jsonData.success !== undefined) {
+                    lastResult = jsonData; // Capture success
+                }
+            } catch {
+                // Log non-JSON data for debugging
+                console.warn('Non-JSON Python output:', output.trim());
             }
         });
 
         pythonProcess.stderr.on('data', (data) => {
-            console.error('Python error:', data.toString());
+            console.error('Python error:', data.toString().trim());
         });
 
         pythonProcess.on('close', (code) => {
-            if (code === 0 && result.success) {
-                resolve(result);
+            if (code === 0 && lastResult && lastResult.success) {
+                resolve(lastResult);
             } else {
-                reject(result.error || 'Download failed');
+                const errorMessage = lastResult?.error || `Python script failed with code ${code}. Output: ${pythonOutput}`;
+                reject(new Error(errorMessage));
             }
+        });
+
+        pythonProcess.on('error', (err) => {
+            console.error('Failed to start Python process:', err.message);
+            reject(new Error('Failed to start the Python script.'));
         });
     });
 });
+
+
