@@ -18,9 +18,86 @@
         .noUi-handle:before, .noUi-handle:after {
             display: none;
         }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
+    <!-- Download Progress Modal -->
+    <div id="progress-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-96 max-w-[90%]">
+            <div id="downloading" class="space-y-4">
+                <div class="flex items-center justify-center">
+                    <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Processing Video</h3>
+                    <p class="text-sm text-gray-600 mt-1">Please wait while we process your video...</p>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p class="text-center text-sm text-gray-600">
+                    <span id="progress-text">0</span>% complete
+                </p>
+            </div>
+
+            <!-- Success State -->
+            <div id="success" class="hidden space-y-4">
+                <div class="flex items-center justify-center">
+                    <svg class="h-12 w-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Download Complete!</h3>
+                    <p class="text-sm text-gray-600 mt-1">Your file has been processed successfully.</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button onclick="openFile()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2h-1.528A6 6 0 004 9.528V4z" />
+                            <path fill-rule="evenodd" d="M8 10a4 4 0 00-3.446 6.032l-1.261 1.26a1 1 0 101.414 1.415l1.261-1.261A4 4 0 108 10zm-2 4a2 2 0 114 0 2 2 0 01-4 0z" clip-rule="evenodd" />
+                        </svg>
+                        Open File
+                    </button>
+                    <button onclick="openOutputFolder()" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.5a1.5 1.5 0 01-3 0V6z" clip-rule="evenodd" />
+                            <path d="M6 12a2 2 0 012-2h8a2 2 0 012 2v2a2 2 0 01-2 2H2h2a2 2 0 002-2v-2z" />
+                        </svg>
+                        Open Folder
+                    </button>
+                    <button onclick="closeModal()" class="w-full border border-gray-300 hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-lg transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="error" class="hidden space-y-4">
+                <div class="flex items-center justify-center">
+                    <svg class="h-12 w-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="text-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Download Failed</h3>
+                    <p id="error-message" class="text-sm text-gray-600 mt-1">An error occurred while processing your file.</p>
+                </div>
+                <button onclick="closeModal()" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
     <div class="container mx-auto px-4 py-8">
         <button onclick="window.location.href='index.html'" 
                 class="mb-6 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2">
@@ -110,6 +187,58 @@
     </div>
 
     <script>
+
+            let currentOutputPath = '';
+                    let currentFilePath = '';
+
+                    // Function to show modal
+                    function showModal() {
+                        document.getElementById('progress-modal').classList.remove('hidden');
+                        document.getElementById('downloading').classList.remove('hidden');
+                        document.getElementById('success').classList.add('hidden');
+                        document.getElementById('error').classList.add('hidden');
+                        document.getElementById('progress-bar').style.width = '0%';
+                        document.getElementById('progress-text').textContent = '0';
+                    }
+
+                    // Function to close modal
+                    function closeModal() {
+                        document.getElementById('progress-modal').classList.add('hidden');
+                    }
+
+                    // Function to update progress
+                    function updateProgress(progress) {
+                        document.getElementById('progress-bar').style.width = `${progress}%`;
+                        document.getElementById('progress-text').textContent = Math.round(progress);
+                    }
+
+                    // Function to show success
+                    function showSuccess(filePath) {
+                        currentFilePath = filePath;
+                        document.getElementById('downloading').classList.add('hidden');
+                        document.getElementById('success').classList.remove('hidden');
+                    }
+
+                    // Function to show error
+                    function showError(message) {
+                        document.getElementById('downloading').classList.add('hidden');
+                        document.getElementById('error').classList.remove('hidden');
+                        document.getElementById('error-message').textContent = message;
+                    }
+
+                    // Function to open the processed file
+                    async function openFile() {
+                        if (currentFilePath) {
+                            await window.api.openFile(currentFilePath);
+                        }
+                    }
+
+                    // Function to open the output folder
+                    async function openOutputFolder() {
+                        if (currentOutputPath) {
+                            await window.api.openFolder(currentOutputPath);
+                        }
+                    }
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const videoId = urlParams.get('videoId');
@@ -170,6 +299,7 @@
                 document.getElementById('output-path').value = folderPath;
             }
         }
+        
 
         // Start download with selected folder
         async function startDownload() {
@@ -179,6 +309,9 @@
                 alert('Please select an output folder.');
                 return;
             }
+
+            currentOutputPath = outputPath;
+            showModal();
 
             const timeValues = document.getElementById('timeline').noUiSlider.get();
             const downloadOptions = {
@@ -191,11 +324,21 @@
             };
 
             try {
-                await window.api.startDownload(downloadOptions);
-                alert('Download completed successfully.');
+                // Listen for progress updates
+                window.api.onDownloadProgress((progress) => {
+                    updateProgress(progress);
+                });
+
+                const result = await window.api.startDownload(downloadOptions);
+                if (result.success) {
+                    showSuccess(result.path);
+                    currentFilePath = result.path;
+                } else {
+                    showError(result.error || 'Download failed');
+                }
             } catch (error) {
                 console.error('Download error:', error);
-                alert('An error occurred during download. Check console for details.');
+                showError(error.message || 'An unexpected error occurred');
             }
         }
 

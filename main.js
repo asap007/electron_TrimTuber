@@ -3,6 +3,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { dialog } = require('electron');
 const { spawn } = require('child_process');
+const { shell } = require('electron');
 const InvidiousAPI = require('./src/js/api.js');
 
 const api = new InvidiousAPI();
@@ -19,7 +20,6 @@ function createWindow() {
     });
 
     win.loadFile('./src/index.html');
-    win.webContents.openDevTools();
 }
 
 app.whenReady().then(createWindow);
@@ -61,6 +61,24 @@ ipcMain.handle('select-folder', async () => {
         properties: ['openDirectory']
     });
     return !result.canceled ? result.filePaths[0] : null;
+});
+
+ipcMain.handle('open-file', async (event, path) => {
+    try {
+        await shell.openPath(path);
+    } catch (error) {
+        console.error('Error opening file:', error);
+        throw error;
+    }
+});
+
+ipcMain.handle('open-folder', async (event, path) => {
+    try {
+        await shell.openPath(path);
+    } catch (error) {
+        console.error('Error opening folder:', error);
+        throw error;
+    }
 });
 
 

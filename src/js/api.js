@@ -4,12 +4,10 @@ const axios = require('axios');
 class InvidiousAPI {
     constructor() {
         this.instances = [
-            "https://invidious.projectsegfau.lt",
-            "https://vid.puffyan.us",
-            "https://yt.artemislena.eu",
             "https://invidious.flokinet.to",
+            "https://iv.nboeck.de",
             "https://invidious.privacydev.net",
-            "https://iv.nboeck.de"
+            "https://vid.puffyan.us"
         ];
         this.currentInstance = this.instances[0];
         this.pageSize = 20;
