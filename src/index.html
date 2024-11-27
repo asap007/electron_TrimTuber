@@ -2,47 +2,202 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>YouTube Search</title>
+    <title>TrimTuber Search</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
         .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+        
+        .search-animation {
+            animation: gradientBg 2s ease infinite;
+        }
+        
+        @keyframes gradientBg {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .video-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .video-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .skeleton {
+            animation: skeleton-loading 1s linear infinite alternate;
+        }
+        
+        @keyframes skeleton-loading {
+            0% { background-color: #e5e7eb; }
+            100% { background-color: #f3f4f6; }
+        }
+
+        /* Dark mode styles */
+        body.dark {
+            background-color: #111827;
+            color: #f3f4f6;
+        }
+
+        body.dark header {
+            background-color: #1f2937;
+            border-color: #374151;
+        }
+
+        body.dark .bg-white {
+            background-color: #1f2937;
+        }
+
+        body.dark .text-gray-800 {
+            color: #f3f4f6;
+        }
+
+        body.dark .text-gray-600 {
+            color: #9ca3af;
+        }
+
+        body.dark .text-gray-500 {
+            color: #d1d5db;
+        }
+
+        body.dark .text-gray-400 {
+            color: #9ca3af;
+        }
+
+        body.dark .border-gray-200 {
+            border-color: #374151;
+        }
+
+        body.dark .border-gray-300 {
+            border-color: #4b5563;
+        }
+
+        body.dark input {
+            background-color: #374151;
+            color: #f3f4f6;
+            border-color: #4b5563;
+        }
+
+        body.dark input::placeholder {
+            color: #9ca3af;
+        }
+
+        body.dark .hover\:bg-gray-100:hover {
+            background-color: #374151;
+        }
+
+        body.dark .skeleton {
+            background-color: #374151;
+        }
+
+        @keyframes skeleton-loading-dark {
+            0% { background-color: #374151; }
+            100% { background-color: #4b5563; }
+        }
+
+        body.dark .skeleton {
+            animation: skeleton-loading-dark 1s linear infinite alternate;
+        }
+
+        body.dark #trending-header,
+        body.dark .sticky {
+            background-color: #111827;
+        }
     </style>
 </head>
-<body class="bg-gray-100">
-    <header class="bg-white shadow-sm sticky top-0 z-10">
-        <div class="container mx-auto px-4 py-3">
-            <h1 class="text-xl font-bold text-red-600">YouTube Search</h1>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-sm sticky top-0 z-10 border-b border-gray-200">
+        <div class="container mx-auto px-3 py-3 lg:py-4">
+            <!-- Main header container with justify-between -->
+            <div class="flex items-center justify-between gap-6">
+                <!-- Logo section - fixed width -->
+                <div class="flex items-center space-x-3 w-[159px]">
+                    <img src="../assets/logo.png" alt="Custom Icon" class="w-12 h-12 object-contain">
+                    <h1 class="text-lg lg:text-xl font-bold text-gray-800 whitespace-nowrap">TrimTuber</h1>
+                </div>                
+                
+                <!-- Search form - centered with max-width -->
+                <div class="flex-1 flex justify-center max-w-3xl mx-auto">
+                    <form id="search-form" class="w-full">
+                        <div class="relative flex items-center">
+                            <i class="fas fa-search absolute left-4 text-gray-400 pointer-events-none"></i>
+                            <input type="text" 
+                                   id="search-input" 
+                                   placeholder="Search videos..."
+                                   class="w-full pl-12 pr-24 py-2.5 rounded-lg border border-gray-300 
+                                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent 
+                                          shadow-sm text-gray-800 bg-white
+                                          placeholder:text-gray-400">
+                            <button type="submit" 
+                                    class="absolute right-2 px-4 lg:px-6 py-1.5 bg-blue-500 hover:bg-blue-600 
+                                           text-white rounded-lg transition-colors duration-200 
+                                           flex items-center space-x-2 text-sm lg:text-base
+                                           hover:shadow-md">
+                                <span class="hidden sm:inline">Search</span>
+                                <i class="fas fa-arrow-right sm:ml-1"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Theme toggle - fixed width to match logo section -->
+                <div class="w-[140px] flex justify-end">
+                    <button id="theme-toggle" 
+                            class="p-2.5 rounded-full hover:bg-gray-100 transition-colors duration-200
+                                   focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        <i class="far fa-moon text-gray-600 text-xl"></i>
+                    </button>
+                </div>                
+            </div>
         </div>
     </header>
 
-    <div class="container mx-auto px-4 py-6 sticky top-16 z-10 bg-gray-100">
-        <form id="search-form" class="max-w-2xl mx-auto">
-            <div class="flex gap-2">
-                <input type="text" 
-                       id="search-input" 
-                       placeholder="Search videos..."
-                       class="flex-1 px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button type="submit" 
-                        class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">
-                    Search
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <div class="container mx-auto px-4 pb-8">
-        <div id="videos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <!-- Main content area -->
+    <main class="container mx-auto px-4 pb-8 mt-6">
+        <div id="trending-header" class="mb-6 flex items-center space-x-2">
+            <i class="fas fa-fire text-red-500"></i>
+            <h2 class="text-xl font-semibold text-gray-800">Trending Videos</h2>
+        </div>
+        
+        <div id="videos-container" 
+             class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
             <!-- Videos will be inserted here -->
         </div>
-        <div id="loading-indicator" class="hidden py-8 text-center">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        
+        <div id="loading-indicator" class="hidden">
+            <div class="py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+                <!-- Skeleton loading card -->
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="h-48 skeleton"></div>
+                    <div class="p-4 space-y-3">
+                        <div class="h-4 skeleton rounded w-3/4"></div>
+                        <div class="h-4 skeleton rounded w-1/2"></div>
+                        <div class="flex justify-between items-center">
+                            <div class="h-4 skeleton rounded w-1/4"></div>
+                            <div class="h-8 skeleton rounded w-24"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+        
+        <div id="no-results" class="hidden py-12 text-center">
+            <i class="far fa-frown text-4xl text-gray-400 mb-4"></i>
+            <p class="text-gray-600">No videos found. Try a different search term.</p>
+        </div>
 
     <script>
         let currentPage = 1;
@@ -50,8 +205,8 @@
         let hasMoreVideos = true;
         let currentQuery = '';
         let isTrending = true;
+        let isDarkMode = false;
 
-        // Format video duration
         function formatDuration(seconds) {
             const hours = Math.floor(seconds / 3600);
             const minutes = Math.floor((seconds % 3600) / 60);
@@ -63,7 +218,6 @@
             return `${minutes}:${secs.toString().padStart(2, '0')}`;
         }
 
-        // Format view count
         function formatViews(views) {
             if (views >= 1000000) {
                 return `${(views / 1000000).toFixed(1)}M views`;
@@ -74,28 +228,35 @@
             return `${views} views`;
         }
 
-        // Create video card HTML
         function createVideoCard(video) {
             return `
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
-                    <div class="relative">
+                <div class="video-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-200">
+                    <div class="relative group">
                         <img src="${video.thumbnail}" alt="${video.title}" 
-                            class="w-full h-48 object-cover">
+                            class="w-full h-48 object-cover transform transition-transform duration-200 group-hover:scale-105">
                         <span class="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white px-2 py-1 rounded text-sm">
                             ${formatDuration(video.duration)}
                         </span>
+                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-200"></div>
                     </div>
-                    <div class="p-4">
-                        <h3 class="font-semibold text-lg mb-2 line-clamp-2">${video.title}</h3>
-                        <p class="text-gray-600 text-sm mb-2">${video.channelTitle}</p>
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm text-gray-500">
-                                ${formatViews(video.viewCount)}
+                    <div class="p-4 flex flex-col h-[180px]">
+                        <h3 class="font-semibold text-lg mb-2 line-clamp-2 group-hover:text-blue-600">${video.title}</h3>
+                        <div class="flex items-center space-x-2 mb-2">
+                            <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                                <i class="fas fa-user text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-600 text-sm">${video.channelTitle}</p>
+                        </div>
+                        <div class="flex items-center justify-between mt-auto">
+                            <div class="flex items-center space-x-2 text-sm text-gray-500">
+                                <i class="far fa-eye"></i>
+                                <span>${formatViews(video.viewCount)}</span>
                             </div>
                             <button 
                                 onclick="openDownloadPage('${video.id}', '${video.title.replace(/'/g, "\\'")}', '${video.thumbnail}', ${video.duration})"
-                                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
-                                Get Video
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm transition-colors flex items-center space-x-2">
+                                <span>Get Video</span>
+                                <i class="fas fa-download"></i>
                             </button>
                         </div>
                     </div>
@@ -108,13 +269,10 @@
                 videoId: videoId,
                 title: encodeURIComponent(title),
                 thumbnail: thumbnail,
-                duration: duration.toString() // Make sure duration is converted to string
+                duration: duration.toString()
             });
             window.location.href = `download.html?${params.toString()}`;
         }
-
-
-
 
         function showLoadingIndicator() {
             document.getElementById('loading-indicator').classList.remove('hidden');
@@ -126,11 +284,9 @@
 
         function showError(message) {
             const container = document.getElementById('videos-container');
-            container.innerHTML = `
-                <div class="col-span-full text-center py-12">
-                    <p class="text-red-500">${message}</p>
-                </div>
-            `;
+            const noResults = document.getElementById('no-results');
+            container.innerHTML = '';
+            noResults.classList.remove('hidden');
         }
 
         async function loadMoreVideos() {
@@ -147,6 +303,9 @@
                 if (videos.length === 0) {
                     hasMoreVideos = false;
                     hideLoadingIndicator();
+                    if (currentPage === 1) {
+                        showError('No videos found');
+                    }
                     return;
                 }
 
@@ -160,6 +319,7 @@
                 }
 
                 currentPage++;
+                document.getElementById('no-results').classList.add('hidden');
             } catch (error) {
                 showError('Error loading videos');
                 console.error(error);
@@ -169,7 +329,6 @@
             }
         }
 
-        // Handle search
         async function handleSearch(event) {
             event.preventDefault();
             const query = document.getElementById('search-input').value.trim();
@@ -180,13 +339,33 @@
             hasMoreVideos = true;
             isTrending = false;
             
+            document.getElementById('trending-header').innerHTML = `
+                <i class="fas fa-search text-blue-500"></i>
+                <h2 class="text-xl font-semibold text-gray-800">Search Results for "${query}"</h2>
+            `;
+            
             const container = document.getElementById('videos-container');
             container.innerHTML = '';
             
             await loadMoreVideos();
         }
 
-        // Initialize infinite scroll
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const body = document.body;
+            const themeToggle = document.getElementById('theme-toggle');
+            
+            if (isDarkMode) {
+                body.classList.add('dark');
+                themeToggle.innerHTML = '<i class="far fa-sun text-yellow-400 text-xl"></i>';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark');
+                themeToggle.innerHTML = '<i class="far fa-moon text-gray-600 text-xl"></i>';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
         function initInfiniteScroll() {
             window.addEventListener('scroll', () => {
                 const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
@@ -196,12 +375,21 @@
             });
         }
 
-        // Initialize page
         document.addEventListener('DOMContentLoaded', () => {
-            loadMoreVideos(); // Load initial trending videos
+            // Initialize theme from localStorage
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                isDarkMode = true;
+                document.body.classList.add('dark');
+                document.getElementById('theme-toggle').innerHTML = '<i class="far fa-sun text-yellow-400 text-xl"></i>';
+            }
+
+            loadMoreVideos();
             initInfiniteScroll();
             const searchForm = document.getElementById('search-form');
             searchForm.addEventListener('submit', handleSearch);
+            const themeToggle = document.getElementById('theme-toggle');
+            themeToggle.addEventListener('click', toggleTheme);
         });
     </script>
 </body>

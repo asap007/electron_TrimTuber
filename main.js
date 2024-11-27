@@ -1,5 +1,5 @@
 // main.js
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const { dialog } = require('electron');
 const { spawn } = require('child_process');
@@ -16,9 +16,12 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js')
-        }
+        },
+        icon: path.join(__dirname, 'assets', 'logo.png'),
+
     });
 
+    Menu.setApplicationMenu(null);
     win.loadFile('./src/index.html');
 }
 
@@ -84,9 +87,10 @@ ipcMain.handle('open-folder', async (event, path) => {
 
 ipcMain.handle('start-download', async (event, options) => {
     return new Promise((resolve, reject) => {
-        const pythonScript = path.join(__dirname, 'python', 'downloader.py');
-        const pythonProcess = spawn('python', [
-            pythonScript,
+        const downloaderPath = app.isPackaged 
+            ? path.join(process.resourcesPath, 'downloader.exe')
+            : path.join(__dirname, 'downloader.exe');
+        const childProcess = spawn(downloaderPath, [
             JSON.stringify(options)
         ]);
 
@@ -95,7 +99,7 @@ ipcMain.handle('start-download', async (event, options) => {
         let phase = 'processing'; // 'processing', 'encoding', 'converting'
         let completedPhases = 0;
 
-        pythonProcess.stdout.on('data', (data) => {
+        childProcess.stdout.on('data', (data) => {
             const output = data.toString();
             buffer += output;
 
@@ -155,14 +159,14 @@ ipcMain.handle('start-download', async (event, options) => {
             }, 500); // Update every 500ms
 
             // Clear interval when process ends
-            pythonProcess.on('close', () => clearInterval(interval));
+            childProcess.on('close', () => clearInterval(interval));
         }
 
-        pythonProcess.stderr.on('data', (data) => {
+        childProcess.stderr.on('data', (data) => {
             console.error('Python error:', data.toString().trim());
         });
 
-        pythonProcess.on('close', (code) => {
+        childProcess.on('close', (code) => {
             if (code === 0 && lastResult && lastResult.success) {
                 // Ensure we show 100% at the end
                 event.sender.send('download-progress', 100);
@@ -173,7 +177,7 @@ ipcMain.handle('start-download', async (event, options) => {
             }
         });
 
-        pythonProcess.on('error', (err) => {
+        childProcess.on('error', (err) => {
             console.error('Failed to start Python:', err.message);
             reject(new Error('Failed to start Python script.'));
         });

@@ -6,11 +6,47 @@
   "scripts": {
     "start": "electron .",
     "watch:css": "tailwindcss -i src/styles.css -o src/output.css --watch",
-    "build": "electron-builder"
+    "build": "electron-builder --win"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "build": {
+    "appId": "com.electron.app",
+    "productName": "Electron App",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/logo.png"
+    },
+    "extraResources": [
+      {
+        "from": "downloader.exe",
+        "to": "downloader.exe"
+      },
+      {
+        "from": "assets/",
+        "to": "assets/"
+      }
+    ],
+    "files": [
+      "**/*",
+      "assets/**/*",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ]
+  },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
     "electron": "^33.2.0",

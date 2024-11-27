@@ -6,30 +6,142 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.css">
     <script src="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.js"></script>
+    <script>
+        // Configure dark mode for Tailwind
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
     <style>
-        .noUi-connect {
-            background: #3b82f6;
-        }
+        /* Replace the existing .noUi-handle styles with these */
         .noUi-handle {
+            width: 32px !important;
+            height: 26px !important;
+            right: -16px !important;
+            top: -6px !important;
             background: #1d4ed8;
-            border-radius: 50%;
-            box-shadow: none;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            cursor: grab;
+            transition: all 0.2s ease;
         }
-        .noUi-handle:before, .noUi-handle:after {
+
+        .noUi-handle:before,
+        .noUi-handle:after {
             display: none;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+
+        /* Add inner lines to create modern zipper-like effect */
+        .noUi-handle::before {
+            content: '';
+            position: absolute;
+            display: block !important;
+            width: 3px;
+            height: 9px;
+            background: rgba(255, 255, 255, 0.9);
+            top: 6px;
+            left: 11px;
+            border-radius: 1px;
         }
-        .animate-spin {
-            animation: spin 1s linear infinite;
+
+        .noUi-handle::after {
+            content: '';
+            position: absolute;
+            display: block !important;
+            width: 3px;
+            height: 9px;
+            background: rgba(255, 255, 255, 0.9);
+            top: 6px;
+            left: 19px;
+            border-radius: 1px;
+        }
+
+        /* Hover effect */
+        .noUi-handle:hover {
+            background: #2563eb;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+        }
+
+        /* Dark mode adjustments */
+        .dark .noUi-handle {
+            background: #3b82f6;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .dark .noUi-handle:hover {
+            background: #60a5fa;
+        }
+
+        /* Active state styles */
+        .noUi-handle:active {
+            cursor: grabbing;
+            background: #1e40af;
+            transform: translateY(0);
+            box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .noUi-handle:active {
+            background: #2563eb;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-100 min-h-screen dark:bg-gray-900 transition-colors duration-200">
+    <script>
+        // Check theme on page load
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark')
+                localStorage.theme = 'light'
+                document.getElementById('theme-icon-moon').classList.remove('hidden')
+                document.getElementById('theme-icon-sun').classList.add('hidden')
+            } else {
+                document.documentElement.classList.add('dark')
+                localStorage.theme = 'dark'
+                document.getElementById('theme-icon-sun').classList.remove('hidden')
+                document.getElementById('theme-icon-moon').classList.add('hidden')
+            }
+        }
+
+        // Initialize theme icons on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const isDark = document.documentElement.classList.contains('dark')
+            document.getElementById('theme-icon-sun').classList.toggle('hidden', !isDark)
+            document.getElementById('theme-icon-moon').classList.toggle('hidden', isDark)
+        })
+    </script>
+
+    <!-- Output Path Alert Modal -->
+        <div id="alert-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-96 max-w-[90%]">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-center">
+                        <svg class="h-12 w-12 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Output Folder Required</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Please select an output folder to continue with the download.</p>
+                    </div>
+                    <button onclick="closeAlertModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        Okay
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
     <!-- Download Progress Modal -->
     <div id="progress-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl p-6 w-96 max-w-[90%]">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 w-96 max-w-[90%]">
             <div id="downloading" class="space-y-4">
                 <div class="flex items-center justify-center">
                     <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -38,13 +150,13 @@
                     </svg>
                 </div>
                 <div class="text-center">
-                    <h3 id="progress-state" class="text-lg font-semibold text-gray-900">Processing Video</h3>
-                    <p id="progress-description" class="text-sm text-gray-600 mt-1">Please wait while we process your video...</p>
+                    <h3 id="progress-state" class="text-lg font-semibold text-gray-900 dark:text-white">Processing Video</h3>
+                    <p id="progress-description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">Please wait while we process your video...</p>
                 </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                     <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
-                <p class="text-center text-sm text-gray-600">
+                <p class="text-center text-sm text-gray-600 dark:text-gray-400">
                     <span id="progress-text">0</span>% complete
                 </p>
             </div>
@@ -57,8 +169,8 @@
                     </svg>
                 </div>
                 <div class="text-center">
-                    <h3 class="text-lg font-semibold text-gray-900">Download Complete!</h3>
-                    <p class="text-sm text-gray-600 mt-1">Your file has been processed successfully.</p>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Download Complete!</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Your file has been processed successfully.</p>
                 </div>
                 <div class="flex flex-col gap-2">
                     <button onclick="openFile()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
@@ -75,7 +187,7 @@
                         </svg>
                         Open Folder
                     </button>
-                    <button onclick="closeModal()" class="w-full border border-gray-300 hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-lg transition-colors">
+                    <button onclick="closeModal()" class="w-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition-colors">
                         Close
                     </button>
                 </div>
@@ -89,8 +201,8 @@
                     </svg>
                 </div>
                 <div class="text-center">
-                    <h3 class="text-lg font-semibold text-gray-900">Download Failed</h3>
-                    <p id="error-message" class="text-sm text-gray-600 mt-1">An error occurred while processing your file.</p>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Download Failed</h3>
+                    <p id="error-message" class="text-sm text-gray-600 dark:text-gray-400 mt-1">An error occurred while processing your file.</p>
                 </div>
                 <button onclick="closeModal()" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
                     Close
@@ -98,19 +210,34 @@
             </div>
         </div>
     </div>
+
     <div class="container mx-auto px-4 py-8">
-        <button onclick="window.location.href='index.html'" 
-                class="mb-6 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
-            </svg>
-            Back to Search
-        </button>
+        <div class="flex justify-between items-center mb-6">
+            <button onclick="window.location.href='index.html'" 
+                    class="bg-gray-500 dark:bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 dark:hover:bg-gray-600 transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+                Back to Search
+            </button>
+
+            <!-- Theme Toggle Button -->
+            <button onclick="toggleTheme()" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                <!-- Sun Icon -->
+                <svg id="theme-icon-sun" class="hidden w-6 h-6 text-gray-800 dark:text-yellow-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <!-- Moon Icon -->
+                <svg id="theme-icon-moon" class="hidden w-6 h-6 text-gray-800 dark:text-gray-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+            </button>
+        </div>
 
         <div class="max-w-4xl mx-auto">
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
                 <div class="relative">
-                    <img id="video-thumbnail" src="" alt="" class="w-full h-64 object-cover">
+                    <img id="video-thumbnail" src="" alt="" class="w-full h-64 object-cover object-top">
                     <div class="absolute inset-0 bg-black bg-opacity-40"></div>
                     <h1 id="video-title" class="absolute bottom-4 left-4 right-4 text-white text-2xl font-bold line-clamp-2"></h1>
                 </div>
@@ -118,9 +245,9 @@
                 <div class="p-6 space-y-6">
                     <!-- Timeline Section -->
                     <div class="space-y-2">
-                        <label class="text-sm font-medium text-gray-700">Video Timeline</label>
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Video Timeline</label>
                         <div id="timeline" class="mt-2"></div>
-                        <div class="flex justify-between text-sm text-gray-600">
+                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                             <span id="time-start">0:00</span>
                             <span id="time-end">0:00</span>
                         </div>
@@ -130,27 +257,27 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Quality Selection -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Quality</label>
-                            <select id="quality" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quality</label>
+                            <select id="quality" class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="highest">Highest</option>
                                 <option value="1080p">1080p</option>
                                 <option value="720p">720p</option>
                                 <option value="480p">480p</option>
-                                <option value="360p">360p</option>
+                                <option value="360p" selected>360p</option>
                             </select>
                         </div>
 
                         <!-- Format Selection -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Format</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Format</label>
                             <div class="flex gap-4">
                                 <label class="inline-flex items-center">
                                     <input type="radio" name="format" value="video" checked class="text-blue-600 focus:ring-blue-500 h-4 w-4">
-                                    <span class="ml-2">Video</span>
+                                    <span class="ml-2 text-gray-900 dark:text-gray-300">Video</span>
                                 </label>
                                 <label class="inline-flex items-center">
                                     <input type="radio" name="format" value="audio" class="text-blue-600 focus:ring-blue-500 h-4 w-4">
-                                    <span class="ml-2">Audio Only</span>
+                                    <span class="ml-2 text-gray-900 dark:text-gray-300">Audio Only</span>
                                 </label>
                             </div>
                         </div>
@@ -158,18 +285,17 @@
 
                     <!-- Output Path -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Output Folder</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Output Folder</label>
                         <div class="flex gap-2">
                             <input type="text" id="output-path" readonly 
-                                class="flex-1 border border-gray-300 rounded-lg px-3 py-2 bg-gray-50" 
+                                class="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-300" 
                                 placeholder="Select a folder">
                             <button onclick="selectOutputFolder()"
-                                    class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors">
+                                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-300 rounded-lg transition-colors">
                                 Browse
                             </button>
                         </div>
                     </div>
-
 
                     <!-- Download Button -->
                     <div class="flex justify-center pt-4">
@@ -185,8 +311,7 @@
             </div>
         </div>
     </div>
-
-    <script>
+        <script>
 
             let currentOutputPath = '';
             let currentFilePath = '';
@@ -207,13 +332,13 @@
                 currentPhase = phase;
                 const stateText = {
                     'processing': 'Processing Video',
-                    'encoding': 'Encoding Video',
-                    'converting': 'Converting Video'
+                    'downloading': 'Downloading Video',
+                    'converting': 'Finalizing'
                 };
                 const descriptionText = {
                     'processing': 'Please wait while we process your video...',
-                    'encoding': 'Please wait while we encode your video...',
-                    'converting': 'Please wait while we convert your video to the final format...'
+                    'downloading': 'Please wait while we download your video...',
+                    'converting': 'Adding finishing touches to your video...'
                 };
                 
                 document.getElementById('progress-state').textContent = stateText[phase];
@@ -320,13 +445,23 @@
             }
         }
         
+        // Function to show alert modal
+        function showAlertModal() {
+            document.getElementById('alert-modal').classList.remove('hidden');
+        }
+
+        // Function to close alert modal
+        function closeAlertModal() {
+            document.getElementById('alert-modal').classList.add('hidden');
+        }
+
 
         // Start download with selected folder
         async function startDownload() {
             const outputPath = document.getElementById('output-path').value;
 
             if (!outputPath) {
-                alert('Please select an output folder.');
+                showAlertModal(); 
                 return;
             }
 
