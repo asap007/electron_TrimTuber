@@ -4,9 +4,9 @@ const axios = require('axios');
 class InvidiousAPI {
     constructor() {
         this.instances = [
-            "https://invidious.flokinet.to",
             "https://iv.nboeck.de",
             "https://invidious.privacydev.net",
+            "https://invidious.flokinet.to",
             "https://vid.puffyan.us"
         ];
         this.currentInstance = this.instances[0];

@@ -1,7 +1,7 @@
 {
-  "name": "electron",
-  "version": "1.0.0",
-  "description": "",
+  "name": "TrimTuber",
+  "version": "1.2.0",
+  "description": "Trim and process YouTube videos with ease.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -9,17 +9,25 @@
     "build": "electron-builder --win"
   },
   "keywords": [],
-  "author": "",
+  "author": "Anshul Singh Sengar",
   "license": "ISC",
   "build": {
-    "appId": "com.electron.app",
-    "productName": "Electron App",
+    "appId": "com.trimtuber.app",
+    "productName": "TrimTuber",
     "directories": {
       "output": "dist"
     },
     "win": {
       "target": "nsis",
-      "icon": "assets/logo.png"
+      "icon": "assets/logo.png",
+      "executableName": "TrimTuber"
+    },
+    "nsis": {
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TrimTuber",
+      "oneClick": true,
+      "allowToChangeInstallationDirectory": false
     },
     "extraResources": [
       {
