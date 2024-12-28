@@ -96,20 +96,13 @@ ipcMain.handle('start-download', async (event, options) => {
 
         let lastResult = null;
         let buffer = '';
-        let phase = 'processing'; // 'processing', 'encoding', 'converting'
-        let completedPhases = 0;
+        let currentPhase = 'processing';
+        let convertingProgress = 0;
+        let convertingInterval;
 
         childProcess.stdout.on('data', (data) => {
             const output = data.toString();
             buffer += output;
-
-            // Check for phase transition
-            if (buffer.includes('Destination:') && phase === 'processing') {
-                phase = 'encoding';
-                event.sender.send('phase-change', 'encoding');
-                event.sender.send('download-progress', 0);
-                buffer = '';
-            }
 
             let match;
             const jsonRegex = /\{[^}]*\}/g;
@@ -118,26 +111,47 @@ ipcMain.handle('start-download', async (event, options) => {
                 try {
                     const jsonData = JSON.parse(match[0]);
 
-                    if (jsonData.progress !== undefined) {
-                        const currentProgress = parseFloat(jsonData.progress);
-                        
-                        // Handle progress based on current phase
-                        if (currentProgress === 100) {
-                            completedPhases++;
-                            
-                            // If we've completed both download and encoding
-                            if (completedPhases === 2 && phase !== 'converting') {
-                                phase = 'converting';
-                                event.sender.send('phase-change', 'converting');
-                                // Start showing slow progress for converting phase
-                                startConvertingProgress(event);
-                            }
+                    // Handle phase changes
+                    if (jsonData.phase) {
+                        let newPhase;
+                        switch(jsonData.phase) {
+                            case 'downloading':
+                                newPhase = 'encoding';
+                                break;
+                            case 'converting':
+                                newPhase = 'converting';
+                                // Start simulated progress for converting phase
+                                if (convertingInterval) clearInterval(convertingInterval);
+                                convertingProgress = 0;
+                                convertingInterval = setInterval(() => {
+                                    convertingProgress += 1;
+                                    if (convertingProgress <= 95) {
+                                        event.sender.send('download-progress', convertingProgress);
+                                    }
+                                }, 100);
+                                break;
+                            default:
+                                newPhase = jsonData.phase;
                         }
                         
-                        event.sender.send('download-progress', currentProgress);
+                        if (newPhase !== currentPhase) {
+                            currentPhase = newPhase;
+                            event.sender.send('phase-change', currentPhase);
+                        }
+                    }
+
+                    // Handle progress updates
+                    if (jsonData.progress !== undefined) {
+                        const currentProgress = parseFloat(jsonData.progress);
+                        if (currentPhase === 'encoding') {
+                            event.sender.send('download-progress', currentProgress);
+                        }
                     }
 
                     if (jsonData.success !== undefined) {
+                        if (convertingInterval) {
+                            clearInterval(convertingInterval);
+                        }
                         lastResult = jsonData;
                     }
 
@@ -148,25 +162,15 @@ ipcMain.handle('start-download', async (event, options) => {
             }
         });
 
-        // Function to simulate progress during converting phase
-        function startConvertingProgress(event) {
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 0.5; // Slow increment
-                if (progress <= 99) {
-                    event.sender.send('download-progress', progress);
-                }
-            }, 500); // Update every 500ms
-
-            // Clear interval when process ends
-            childProcess.on('close', () => clearInterval(interval));
-        }
-
         childProcess.stderr.on('data', (data) => {
             console.error('Python error:', data.toString().trim());
         });
 
         childProcess.on('close', (code) => {
+            if (convertingInterval) {
+                clearInterval(convertingInterval);
+            }
+            
             if (code === 0 && lastResult && lastResult.success) {
                 // Ensure we show 100% at the end
                 event.sender.send('download-progress', 100);
@@ -178,6 +182,9 @@ ipcMain.handle('start-download', async (event, options) => {
         });
 
         childProcess.on('error', (err) => {
+            if (convertingInterval) {
+                clearInterval(convertingInterval);
+            }
             console.error('Failed to start Python:', err.message);
             reject(new Error('Failed to start Python script.'));
         });
