@@ -4,7 +4,7 @@
   "description": "Trim and process YouTube videos with ease.",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "cross-env NODE_ENV=development electron .",
     "watch:css": "tailwindcss -i src/styles.css -o src/output.css --watch",
     "build": "electron-builder --win"
   },
@@ -66,6 +66,7 @@
   "dependencies": {
     "axios": "^1.7.7",
     "child_process": "^1.0.2",
+    "cross-env": "^7.0.3",
     "lodash": "^4.17.21",
     "util": "^0.12.5"
   }

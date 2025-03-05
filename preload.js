@@ -2,8 +2,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-    searchVideos: (query, page) => ipcRenderer.invoke('search-videos', { query, page }),
-    getTrending: (page) => ipcRenderer.invoke('get-trending', { page }),
+    searchVideos: (params) => ipcRenderer.invoke('search-videos', params),
+    getTrending: (params) => ipcRenderer.invoke('get-trending', params),
+    getMusic: (params) => ipcRenderer.invoke('get-music', params),
+    getGaming: (params) => ipcRenderer.invoke('get-gaming', params),
+    getSports: (params) => ipcRenderer.invoke('get-sports', params),
     selectFolder: () => ipcRenderer.invoke('select-folder'),
     startDownload: (options) => ipcRenderer.invoke('start-download', options),
     onDownloadProgress: (callback) => {

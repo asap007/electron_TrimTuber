@@ -4,13 +4,10 @@ const path = require('path');
 const { dialog } = require('electron');
 const { spawn } = require('child_process');
 const { shell } = require('electron');
-const InvidiousAPI = require('./src/js/api.js');
-
-const api = new InvidiousAPI();
 
 function createWindow() {
     const win = new BrowserWindow({
-        width: 1200,
+        width: 1280,
         height: 800,
         webPreferences: {
             nodeIntegration: false,
@@ -18,11 +15,16 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js')
         },
         icon: path.join(__dirname, 'assets', 'logo.png'),
-
     });
 
     Menu.setApplicationMenu(null);
-    win.loadFile('./src/index.html');
+    
+    // For Next.js app development
+    const startUrl = app.isPackaged 
+        ? `file://${path.join(__dirname, '../.next/server/app/index.html')}` 
+        : 'http://localhost:4000';
+    
+    win.loadURL(startUrl);
 }
 
 app.whenReady().then(createWindow);
@@ -65,17 +67,43 @@ function callPythonWorker(options) {
     });
 }
 
-ipcMain.handle('search-videos', async (_, { query }) => {
+ipcMain.handle('search-videos', async (_, { query, page = 1 }) => {
     return (await callPythonWorker({ 
         action: 'search', 
         query: query,
+        page: page || 1,
         max_results: 20 
     })).videos;
 });
 
-ipcMain.handle('get-trending', async () => {
+ipcMain.handle('get-trending', async (_, { page = 1 }) => {
     return (await callPythonWorker({ 
         action: 'trending',
+        page: page || 1,
+        max_results: 20 
+    })).videos;
+});
+
+ipcMain.handle('get-music', async (_, { page = 1 }) => {
+    return (await callPythonWorker({ 
+        action: 'music',
+        page: page || 1,
+        max_results: 20 
+    })).videos;
+});
+
+ipcMain.handle('get-sports', async (_, { page = 1 }) => {
+    return (await callPythonWorker({ 
+        action: 'sports',
+        page: page || 1,
+        max_results: 20 
+    })).videos;
+});
+
+ipcMain.handle('get-gaming', async (_, { page = 1 }) => {
+    return (await callPythonWorker({ 
+        action: 'gaming',
+        page: page || 1,
         max_results: 20 
     })).videos;
 });
@@ -104,7 +132,6 @@ ipcMain.handle('open-folder', async (event, path) => {
         throw error;
     }
 });
-
 
 ipcMain.handle('start-download', async (event, options) => {
     return new Promise((resolve, reject) => {
@@ -211,5 +238,3 @@ ipcMain.handle('start-download', async (event, options) => {
         });
     });
 });
-
-
