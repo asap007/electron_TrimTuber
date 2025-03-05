@@ -39,24 +39,45 @@ app.on('activate', () => {
     }
 });
 
-ipcMain.handle('search-videos', async (event, { query, page }) => {
-    try {
-        const results = await api.searchVideos(query, page);
-        return results;
-    } catch (error) {
-        console.error('Search error:', error);
-        throw error;
-    }
+function callPythonWorker(options) {
+    return new Promise((resolve, reject) => {
+        const downloaderPath = app.isPackaged 
+            ? path.join(process.resourcesPath, 'downloader.exe')
+            : path.join(__dirname, 'downloader.exe');
+
+        console.log('Attempting to spawn:', downloaderPath); // Log the path
+
+        const child = spawn(downloaderPath, [JSON.stringify(options)]);
+        let output = '';
+        
+        child.stdout.on('data', (data) => output += data.toString());
+        child.stderr.on('data', (data) => console.error('Python error:', data.toString()));
+        
+        child.on('close', (code) => {
+            if (code !== 0) return reject(new Error(`Exit code ${code}`));
+            try {
+                const result = JSON.parse(output);
+                result.success ? resolve(result) : reject(new Error(result.error));
+            } catch(e) {
+                reject(new Error('Invalid JSON response'));
+            }
+        });
+    });
+}
+
+ipcMain.handle('search-videos', async (_, { query }) => {
+    return (await callPythonWorker({ 
+        action: 'search', 
+        query: query,
+        max_results: 20 
+    })).videos;
 });
 
-ipcMain.handle('get-trending', async (event, { page }) => {
-    try {
-        const results = await api.getTrending(page);
-        return results;
-    } catch (error) {
-        console.error('Trending error:', error);
-        throw error;
-    }
+ipcMain.handle('get-trending', async () => {
+    return (await callPythonWorker({ 
+        action: 'trending',
+        max_results: 20 
+    })).videos;
 });
 
 ipcMain.handle('select-folder', async () => {

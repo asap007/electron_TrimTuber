@@ -1,31 +1,23 @@
+// search.js
 // Format video duration with improved handling of longer times
 function formatDuration(seconds) {
-    // Handle invalid input
     if (!seconds || seconds < 0) return '0:00';
-    
-    // Convert to integers to avoid floating point issues
     seconds = Math.floor(seconds);
     
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
     
-    // Build time string
     let timeString = '';
     
-    // Add hours if present
     if (hours > 0) {
         timeString += `${hours}:`;
-        // When hours are present, minutes should always be two digits
         timeString += `${minutes.toString().padStart(2, '0')}:`;
     } else {
-        // When no hours, just show minutes without leading zero
         timeString += `${minutes}:`;
     }
     
-    // Seconds should always be two digits
     timeString += remainingSeconds.toString().padStart(2, '0');
-    
     return timeString;
 }
 
@@ -57,7 +49,6 @@ function formatPublished(timestamp) {
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
     
-    // More granular time formatting
     if (seconds < 60) return 'Just now';
     if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
     if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
@@ -72,19 +63,19 @@ function createVideoCard(video) {
     return `
         <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200">
             <div class="relative">
-                <img src="${video.thumbnailUrl || ''}" alt="${video.title}" 
+                <img src="${video.thumbnail}" alt="${video.title}" 
                      class="w-full h-48 object-cover">
                 <span class="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white px-2 py-1 rounded text-sm">
-                    ${formatDuration(video.lengthSeconds)}
+                    ${formatDuration(video.duration)}
                 </span>
             </div>
             <div class="p-4">
                 <h3 class="font-semibold text-lg mb-2 line-clamp-2">${video.title || 'Untitled'}</h3>
-                <p class="text-gray-600 text-sm mb-2">${video.author || 'Unknown author'}</p>
+                <p class="text-gray-600 text-sm mb-2">${video.channelTitle || 'Unknown author'}</p>
                 <div class="flex items-center text-sm text-gray-500">
                     <span>${formatViews(video.viewCount)}</span>
                     <span class="mx-2">•</span>
-                    <span>${formatPublished(video.published)}</span>
+                    <span>${formatPublished(video.publishedAt)}</span>
                 </div>
             </div>
         </div>

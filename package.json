@@ -1,6 +1,6 @@
 {
   "name": "TrimTuber",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "description": "Trim and process YouTube videos with ease.",
   "main": "main.js",
   "scripts": {
@@ -65,6 +65,8 @@
   },
   "dependencies": {
     "axios": "^1.7.7",
-    "lodash": "^4.17.21"
+    "child_process": "^1.0.2",
+    "lodash": "^4.17.21",
+    "util": "^0.12.5"
   }
 }
