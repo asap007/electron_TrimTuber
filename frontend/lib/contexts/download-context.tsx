@@ -36,6 +36,17 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast()
   const notifiedDownloads = useRef(new Set<string>())
   
+  // Store download data in refs for immediate access
+  const downloadsRef = useRef<{
+    active: Download[],
+    minimized: Download[],
+    current: Download | null
+  }>({
+    active: [],
+    minimized: [],
+    current: null
+  })
+  
   // Main download states
   const [activeDownloads, setActiveDownloads] = useState<Download[]>([])
   const [completedDownloads, setCompletedDownloads] = useState<Download[]>([])
@@ -44,6 +55,31 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
   // UI state for download management
   const [minimizedDownloads, setMinimizedDownloads] = useState<Download[]>([])
   const [activeDownload, setActiveDownload] = useState<Download | null>(null)
+
+  // Helper function to ensure uniqueness in download arrays
+  const ensureUniqueDownloads = (downloads: Download[]): Download[] => {
+    const uniqueMap = new Map<string, Download>();
+    
+    // Use the most recent version of each download ID
+    downloads.forEach(download => {
+      uniqueMap.set(download.id, download);
+    });
+    
+    return Array.from(uniqueMap.values());
+  };
+
+  // Sync state with refs
+  useEffect(() => {
+    downloadsRef.current.active = activeDownloads;
+  }, [activeDownloads]);
+
+  useEffect(() => {
+    downloadsRef.current.minimized = minimizedDownloads;
+  }, [minimizedDownloads]);
+
+  useEffect(() => {
+    downloadsRef.current.current = activeDownload;
+  }, [activeDownload]);
 
   // Initialize data from storage on app load
   useEffect(() => {
@@ -95,36 +131,84 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Add listener for new downloads
     const newDownloadListener = (downloadData: Download) => {
-      setActiveDownloads((prev) => [...prev, downloadData])
-      setActiveDownload(downloadData)
+      setActiveDownloads((prev) => {
+        // Check if this download already exists
+        const exists = prev.some(d => d.id === downloadData.id);
+        
+        if (exists) {
+          // Update the existing download instead of adding a new one
+          const updated = prev.map(d => 
+            d.id === downloadData.id ? downloadData : d
+          );
+          downloadsRef.current.active = updated;
+          return updated;
+        } else {
+          // Add the new download
+          const updated = [...prev, downloadData];
+          downloadsRef.current.active = updated;
+          return updated;
+        }
+      });
+      
+      setActiveDownload(downloadData);
+      downloadsRef.current.current = downloadData;
     }
 
     const progressListener = (downloadId: string, progress: number) => {
-      setActiveDownloads((prev) =>
-        prev.map((download) =>
-          download.id === downloadId ? { ...download, progress } : download
-        )
-      )
+      // Create an update function to reuse for all state updates
+      const updateDownload = (download: Download) => 
+        download.id === downloadId ? { ...download, progress } : download;
       
-      // Also update minimized downloads
-      setMinimizedDownloads((prev) => 
-        prev.map((download) =>
-          download.id === downloadId ? { ...download, progress } : download
-        )
-      )
+      // Update all active downloads with consistent state
+      const updatedActiveDownloads = downloadsRef.current.active.map(updateDownload);
+      
+      // Use a single state update for active downloads and ensure uniqueness
+      setActiveDownloads(ensureUniqueDownloads(updatedActiveDownloads));
+      downloadsRef.current.active = updatedActiveDownloads;
+      
+      // Update minimized downloads
+      setMinimizedDownloads(prev => {
+        const updated = prev.map(updateDownload);
+        downloadsRef.current.minimized = updated;
+        return updated;
+      });
       
       // Update active download if this is the active one
-      setActiveDownload((prev) => 
-        prev?.id === downloadId ? { ...prev, progress } : prev
-      )
+      if (downloadsRef.current.current?.id === downloadId) {
+        const updatedCurrent = { ...downloadsRef.current.current, progress };
+        setActiveDownload(updatedCurrent);
+        downloadsRef.current.current = updatedCurrent;
+      }
     }
 
     const phaseChangeListener = (downloadId: string, phase: string) => {
-      setActiveDownloads((prev) =>
-        prev.map((download) =>
-          download.id === downloadId ? { ...download, phase } : download
-        )
-      )
+      // Create an update function to reuse for all state updates
+      const updateDownload = (download: Download) => 
+        download.id === downloadId ? { ...download, phase } : download;
+      
+      // Update active downloads
+      setActiveDownloads(prev => {
+        const updated = prev.map(updateDownload);
+        downloadsRef.current.active = ensureUniqueDownloads(updated);
+        return ensureUniqueDownloads(updated);
+      });
+      
+      // Update minimized downloads if applicable
+      setMinimizedDownloads(prev => {
+        if (prev.some(d => d.id === downloadId)) {
+          const updated = prev.map(updateDownload);
+          downloadsRef.current.minimized = updated;
+          return updated;
+        }
+        return prev;
+      });
+      
+      // Update active download if this is the active one
+      if (downloadsRef.current.current?.id === downloadId) {
+        const updatedCurrent = { ...downloadsRef.current.current, phase };
+        setActiveDownload(updatedCurrent);
+        downloadsRef.current.current = updatedCurrent;
+      }
     }
 
     const completeListener = (result: Download) => {
@@ -168,14 +252,23 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
       });
       
       // Remove from active downloads
-      setActiveDownloads((prev) => prev.filter((download) => download.id !== result.id));
+      setActiveDownloads((prev) => {
+        const updated = prev.filter((download) => download.id !== result.id);
+        downloadsRef.current.active = updated;
+        return updated;
+      });
       
       // Remove from minimized if present
-      setMinimizedDownloads((prev) => prev.filter((download) => download.id !== result.id));
+      setMinimizedDownloads((prev) => {
+        const updated = prev.filter((download) => download.id !== result.id);
+        downloadsRef.current.minimized = updated;
+        return updated;
+      });
       
       // Clear active download if this was the active one
-      if (activeDownload?.id === result.id) {
+      if (downloadsRef.current.current?.id === result.id) {
         setActiveDownload(null);
+        downloadsRef.current.current = null;
       }
     };
 
@@ -213,23 +306,38 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
           });
         }
         
-        return prev.map((download) =>
+        const updated = prev.map((download) =>
           download.id === downloadId ? { ...download, status: "error", error } : download
         );
+        
+        downloadsRef.current.active = ensureUniqueDownloads(updated);
+        return ensureUniqueDownloads(updated);
       });
     }
 
     // Fetch existing downloads on mount
     const fetchExistingDownloads = async () => {
       try {
-        const downloads = await window.api.getActiveDownloads()
-        setActiveDownloads(downloads)
+        const downloads = await window.api.getActiveDownloads();
+        // Ensure we don't have duplicates when loading existing downloads
+        const uniqueDownloads = ensureUniqueDownloads(downloads);
+        setActiveDownloads(uniqueDownloads);
+        downloadsRef.current.active = uniqueDownloads;
       } catch (error) {
         console.error("Failed to fetch active downloads:", error)
       }
     }
 
     fetchExistingDownloads()
+
+    // Schedule periodic updates to ensure UI stays in sync
+    const syncInterval = setInterval(() => {
+      // Deduplicate active downloads when syncing
+      const uniqueActive = ensureUniqueDownloads(downloadsRef.current.active);
+      if (JSON.stringify(uniqueActive) !== JSON.stringify(activeDownloads)) {
+        setActiveDownloads(uniqueActive);
+      }
+    }, 500);
 
     // Register event listeners
     window.api.on("new-download", newDownloadListener)
@@ -240,39 +348,63 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       // Clean up event listeners
+      clearInterval(syncInterval);
       window.api.off("new-download", newDownloadListener)
       window.api.off("download-progress", progressListener)
       window.api.off("phase-change", phaseChangeListener)
       window.api.off("download-complete", completeListener)
       window.api.off("download-error", errorListener)
     }
-  }, [toast, activeDownload])
+  }, [toast])
 
   // UI actions for download management
   const minimizeDownload = (id: string) => {
-    const download = activeDownloads.find((d) => d.id === id)
-    if (download && !minimizedDownloads.some((d) => d.id === id)) {
-      setMinimizedDownloads((prev) => [...prev, download])
+    const download = downloadsRef.current.active.find((d) => d.id === id);
+    if (download && !downloadsRef.current.minimized.some((d) => d.id === id)) {
+      setMinimizedDownloads((prev) => {
+        const updated = [...prev, download];
+        downloadsRef.current.minimized = updated;
+        return updated;
+      });
     }
-    if (activeDownload?.id === id) {
-      setActiveDownload(null)
+    
+    if (downloadsRef.current.current?.id === id) {
+      setActiveDownload(null);
+      downloadsRef.current.current = null;
     }
   }
 
   const restoreDownload = (id: string) => {
-    const download = activeDownloads.find((d) => d.id === id)
+    const download = downloadsRef.current.active.find((d) => d.id === id);
     if (download) {
-      setActiveDownload(download)
-      setMinimizedDownloads((prev) => prev.filter((d) => d.id !== id))
+      setActiveDownload(download);
+      downloadsRef.current.current = download;
+      
+      setMinimizedDownloads((prev) => {
+        const updated = prev.filter((d) => d.id !== id);
+        downloadsRef.current.minimized = updated;
+        return updated;
+      });
     }
   }
 
   const removeDownload = (id: string) => {
-    setActiveDownloads((prev) => prev.filter((d) => d.id !== id))
-    if (activeDownload?.id === id) {
-      setActiveDownload(null)
+    setActiveDownloads((prev) => {
+      const updated = prev.filter((d) => d.id !== id);
+      downloadsRef.current.active = updated;
+      return updated;
+    });
+    
+    if (downloadsRef.current.current?.id === id) {
+      setActiveDownload(null);
+      downloadsRef.current.current = null;
     }
-    setMinimizedDownloads((prev) => prev.filter((d) => d.id !== id))
+    
+    setMinimizedDownloads((prev) => {
+      const updated = prev.filter((d) => d.id !== id);
+      downloadsRef.current.minimized = updated;
+      return updated;
+    });
   }
   
   // Function to clear history
