@@ -1,7 +1,7 @@
 // app/downloads/page.tsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowDownToLine, History, Clock, CheckCircle } from "lucide-react"
@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast"
 
 export default function DownloadsPage() {
   const { toast } = useToast()
+  const notifiedDownloads = useRef(new Set());
   const [loading, setLoading] = useState(true)
   const [activeDownloads, setActiveDownloads] = useState([])
   const [completedDownloads, setCompletedDownloads] = useState([])
@@ -49,24 +50,30 @@ export default function DownloadsPage() {
     }
 
     const completeListener = (result) => {
+      if (notifiedDownloads.current.has(result.id)) {
+        console.log("Already notified for download:", result.id);
+        return;
+      }
+      
+      notifiedDownloads.current.add(result.id);
+      
       toast({
         title: "Download Complete",
         description: `${result.title || 'Video'} has been downloaded successfully.`,
         variant: "success",
         duration: 5000,
-      })
+      });
       
       setCompletedDownloads((prev) => {
-        // Check if this download ID already exists in the completed list
         const exists = prev.some(download => download.id === result.id);
         if (exists) {
-          return prev; // Don't add it again
+          return prev;
         }
-        return [...prev, result]; // Add it if it doesn't exist
-      })
+        return [...prev, result];
+      });
       
-      setActiveDownloads((prev) => prev.filter((download) => download.id !== result.id))
-    }
+      setActiveDownloads((prev) => prev.filter((download) => download.id !== result.id));
+    };
 
     const errorListener = (downloadId, error) => {
       // Show notification for error
