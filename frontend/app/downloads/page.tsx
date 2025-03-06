@@ -8,6 +8,8 @@ import { ArrowDownToLine, History, Clock, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { DownloadManagement } from "@/components/download-management"
+import { Toaster } from "@/components/ui/toaster"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function DownloadsPage() {
   const [loading, setLoading] = useState(true)
@@ -46,13 +48,27 @@ export default function DownloadsPage() {
     }
 
     const completeListener = (result) => {
-      if (result.success) {
-        setCompletedDownloads((prev) => [...prev, result])
-        setActiveDownloads((prev) => prev.filter((download) => download.id !== result.id))
-      }
+      // Show notification for completed download
+      toast({
+        title: "Download Complete",
+        description: `${result.title || 'Video'} has been downloaded successfully.`,
+        variant: "success",
+        duration: 5000,
+      })
+      
+      setCompletedDownloads((prev) => [...prev, result])
+      setActiveDownloads((prev) => prev.filter((download) => download.id !== result.id))
     }
 
     const errorListener = (downloadId, error) => {
+      // Show notification for error
+      toast({
+        title: "Download Failed",
+        description: error || "An error occurred during download.",
+        variant: "destructive",
+        duration: 5000,
+      })
+      
       setActiveDownloads((prev) =>
         prev.map((download) =>
           download.id === downloadId ? { ...download, status: "error", error } : download
@@ -87,10 +103,12 @@ export default function DownloadsPage() {
       window.api.off("download-complete", completeListener)
       window.api.off("download-error", errorListener)
     }
-  }, [])
+  }, [toast])
 
   return (
     <div className="container py-8">
+      <Toaster />
+      {/* Rest of your JSX remains the same... */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <ArrowDownToLine className="text-primary" />
@@ -124,7 +142,15 @@ export default function DownloadsPage() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex gap-4">
-                      <div className="h-16 w-28 bg-gray-100 rounded"></div>
+                      <div className="h-16 w-28 bg-gray-100 rounded">
+                        {download.thumbnail && (
+                          <img 
+                            src={download.thumbnail} 
+                            alt={download.title || "Download"} 
+                            className="h-full w-full object-cover rounded"
+                          />
+                        )}
+                      </div>
                       <div className="flex-1">
                         <h3 className="font-medium">{download.title || "Downloading..."}</h3>
                         <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
@@ -165,7 +191,15 @@ export default function DownloadsPage() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex gap-4">
-                      <div className="h-16 w-28 bg-gray-100 rounded"></div>
+                      <div className="h-16 w-28 bg-gray-100 rounded">
+                        {download.thumbnail && (
+                          <img 
+                            src={download.thumbnail} 
+                            alt={download.title || "Download"} 
+                            className="h-full w-full object-cover rounded"
+                          />
+                        )}
+                      </div>
                       <div className="flex-1">
                         <h3 className="font-medium">{download.title || "Download completed"}</h3>
                         <div className="text-sm text-gray-500 mt-1">
@@ -175,10 +209,19 @@ export default function DownloadsPage() {
                             : "Download complete"}
                         </div>
                         <div className="flex mt-2">
-                          <Button size="sm" variant="outline" className="mr-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="mr-2"
+                            onClick={() => download.outputFolder && window.api.openFolder(download.outputFolder)}
+                          >
                             Open folder
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => download.outputPath && window.api.openFile(download.outputPath)}
+                          >
                             Play
                           </Button>
                         </div>
@@ -211,16 +254,6 @@ export default function DownloadsPage() {
           )}
         </TabsContent>
       </Tabs>
-
-      <DownloadManagement
-        downloads={activeDownloads}
-        minimizedDownloads={[]}
-        activeDownload={null}
-        onMinimize={() => {}}
-        onRestore={() => {}}
-        onRemove={() => {}}
-        onUpdateProgress={() => {}}
-      />
     </div>
   )
 }

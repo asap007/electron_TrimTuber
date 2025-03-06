@@ -232,7 +232,11 @@ ipcMain.handle('start-download', async (event, options) => {
         if (code === 0 && lastResult && lastResult.success) {
           // Ensure we show 100% at the end
           event.sender.send('download-progress', options.id, 100);
-          event.sender.send('download-complete', options.id, lastResult);
+          event.sender.send('download-complete', {
+            ...options,
+            ...lastResult,
+            completedAt: new Date().toISOString()
+          });
           activeDownloads.delete(options.id);
           resolve(lastResult);
         } else {
