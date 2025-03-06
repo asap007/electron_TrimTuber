@@ -74,7 +74,7 @@ export default function DownloadPage() {
       await window.api.startDownload(downloadOptions)
 
       // Redirect to the downloads page after a short delay to allow UI update
-      // setTimeout(() => router.push("/downloads"), 100)
+      setTimeout(() => router.push("/downloads?tab=completed"), 100)
     } catch (error) {
       console.error("Download error:", error)
       setIsDownloading(false)

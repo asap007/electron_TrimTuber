@@ -1,4 +1,3 @@
-// app/downloads/page.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -8,6 +7,7 @@ import { ArrowDownToLine, History, Clock, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useDownloads } from "@/lib/contexts/download-context"
+import { useSearchParams } from "next/navigation"
 
 export default function DownloadsPage() {
   const { 
@@ -18,6 +18,9 @@ export default function DownloadsPage() {
   } = useDownloads()
   
   const [loading, setLoading] = useState(true)
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get("tab")
+  const [activeTab, setActiveTab] = useState(tabParam || "active")
 
   // Simulate loading state for UI smoothness
   useEffect(() => {
@@ -28,6 +31,13 @@ export default function DownloadsPage() {
     return () => clearTimeout(timer)
   }, [])
 
+  // Update the active tab when the URL parameter changes
+  useEffect(() => {
+    if (tabParam && ["active", "completed", "history"].includes(tabParam)) {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam])
+
   return (
     <div className="container py-8">
       <div className="flex items-center justify-between mb-6">
@@ -37,7 +47,7 @@ export default function DownloadsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="active" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="active" className="flex items-center gap-1">
             <Clock className="h-4 w-4" />
