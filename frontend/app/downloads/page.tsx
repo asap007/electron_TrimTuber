@@ -1,129 +1,35 @@
 // app/downloads/page.tsx
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowDownToLine, History, Clock, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { DownloadManagement } from "@/components/download-management"
-import { Toaster } from "@/components/ui/toaster"
-import { useToast } from "@/components/ui/use-toast"
+import { useDownloads } from "@/lib/contexts/download-context"
 
 export default function DownloadsPage() {
-  const { toast } = useToast()
-  const notifiedDownloads = useRef(new Set());
+  const { 
+    activeDownloads, 
+    completedDownloads, 
+    downloadHistory,
+    clearHistory
+  } = useDownloads()
+  
   const [loading, setLoading] = useState(true)
-  const [activeDownloads, setActiveDownloads] = useState([])
-  const [completedDownloads, setCompletedDownloads] = useState([])
 
+  // Simulate loading state for UI smoothness
   useEffect(() => {
-    // Simulate API loading
     const timer = setTimeout(() => {
       setLoading(false)
-    }, 1000)
+    }, 500)
 
     return () => clearTimeout(timer)
   }, [])
 
-  useEffect(() => {
-    // Add listener for new downloads
-    const newDownloadListener = (downloadData) => {
-      setActiveDownloads((prev) => [...prev, downloadData])
-    }
-
-    const progressListener = (downloadId, progress) => {
-      setActiveDownloads((prev) =>
-        prev.map((download) =>
-          download.id === downloadId ? { ...download, progress } : download
-        )
-      )
-    }
-
-    const phaseChangeListener = (downloadId, phase) => {
-      setActiveDownloads((prev) =>
-        prev.map((download) =>
-          download.id === downloadId ? { ...download, phase } : download
-        )
-      )
-    }
-
-    const completeListener = (result) => {
-      if (notifiedDownloads.current.has(result.id)) {
-        console.log("Already notified for download:", result.id);
-        return;
-      }
-      
-      notifiedDownloads.current.add(result.id);
-      
-      toast({
-        title: "Download Complete",
-        description: `${result.title || 'Video'} has been downloaded successfully.`,
-        variant: "success",
-        duration: 5000,
-      });
-      
-      setCompletedDownloads((prev) => {
-        const exists = prev.some(download => download.id === result.id);
-        if (exists) {
-          return prev;
-        }
-        return [...prev, result];
-      });
-      
-      setActiveDownloads((prev) => prev.filter((download) => download.id !== result.id));
-    };
-
-    const errorListener = (downloadId, error) => {
-      // Show notification for error
-      toast({
-        title: "Download Failed",
-        description: error || "An error occurred during download.",
-        variant: "destructive",
-        duration: 5000,
-      })
-      
-      setActiveDownloads((prev) =>
-        prev.map((download) =>
-          download.id === downloadId ? { ...download, status: "error", error } : download
-        )
-      )
-    }
-
-    // Fetch existing downloads on mount
-    const fetchExistingDownloads = async () => {
-      try {
-        const downloads = await window.api.getActiveDownloads()
-        setActiveDownloads(downloads)
-      } catch (error) {
-        console.error("Failed to fetch active downloads:", error)
-      }
-    }
-
-    fetchExistingDownloads()
-
-    // Register event listeners
-    window.api.on("new-download", newDownloadListener)
-    window.api.on("download-progress", progressListener)
-    window.api.on("phase-change", phaseChangeListener)
-    window.api.on("download-complete", completeListener)
-    window.api.on("download-error", errorListener)
-
-    return () => {
-      // Clean up event listeners
-      window.api.off("new-download", newDownloadListener)
-      window.api.off("download-progress", progressListener)
-      window.api.off("phase-change", phaseChangeListener)
-      window.api.off("download-complete", completeListener)
-      window.api.off("download-error", errorListener)
-    }
-  }, [toast])
-
   return (
     <div className="container py-8">
-      <Toaster />
-      {/* Rest of your JSX remains the same... */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <ArrowDownToLine className="text-primary" />
@@ -259,6 +165,73 @@ export default function DownloadsPage() {
         <TabsContent value="history" className="space-y-4">
           {loading ? (
             <DownloadsSkeleton count={4} />
+          ) : downloadHistory.length > 0 ? (
+            <>
+              <div className="flex justify-end mb-4">
+                <Button variant="outline" size="sm" onClick={clearHistory}>
+                  Clear History
+                </Button>
+              </div>
+              {downloadHistory.map((download) => (
+                <div key={download.id}>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex gap-4">
+                        <div className="h-16 w-28 bg-gray-100 rounded">
+                          {download.thumbnail && (
+                            <img 
+                              src={download.thumbnail} 
+                              alt={download.title || "Download"} 
+                              className="h-full w-full object-cover rounded"
+                            />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium">{download.title || "Download"}</h3>
+                            {download.status === "error" && (
+                              <span className="px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">
+                                Failed
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {download.fileSize ? `${download.fileSize} • ` : ""}
+                            {download.completedAt
+                              ? new Date(download.completedAt).toLocaleString()
+                              : "Download recorded"}
+                          </div>
+                          {download.status !== "error" && (
+                            <div className="flex mt-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="mr-2"
+                                onClick={() => download.outputFolder && window.api.openFolder(download.outputFolder)}
+                              >
+                                Open folder
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => download.outputPath && window.api.openFile(download.outputPath)}
+                              >
+                                Play
+                              </Button>
+                            </div>
+                          )}
+                          {download.status === "error" && (
+                            <div className="text-sm text-red-500 mt-1">
+                              {download.error || "Download failed"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))}
+            </>
           ) : (
             <EmptyState
               title="Download history"
