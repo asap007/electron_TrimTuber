@@ -1,5 +1,6 @@
 // main.js
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
+const activeDownloads = new Map();
 const path = require('path');
 const { dialog } = require('electron');
 const { spawn } = require('child_process');
@@ -66,6 +67,10 @@ function callPythonWorker(options) {
         });
     });
 }
+
+ipcMain.handle('get-active-downloads', async () => {
+    return Array.from(activeDownloads.values());
+  });
 
 ipcMain.handle('search-videos', async (_, { query, page = 1 }) => {
     return (await callPythonWorker({ 
@@ -134,107 +139,117 @@ ipcMain.handle('open-folder', async (event, path) => {
 });
 
 ipcMain.handle('start-download', async (event, options) => {
+
+    activeDownloads.set(options.id, options);
+    // Emit the new-download event to the renderer
+    event.sender.send('new-download', options);
+  
     return new Promise((resolve, reject) => {
-        const downloaderPath = app.isPackaged 
-            ? path.join(process.resourcesPath, 'downloader.exe')
-            : path.join(__dirname, 'downloader.exe');
-        const childProcess = spawn(downloaderPath, [
-            JSON.stringify(options)
-        ]);
-
-        let lastResult = null;
-        let buffer = '';
-        let currentPhase = 'processing';
-        let convertingProgress = 0;
-        let convertingInterval;
-
-        childProcess.stdout.on('data', (data) => {
-            const output = data.toString();
-            buffer += output;
-
-            let match;
-            const jsonRegex = /\{[^}]*\}/g;
-
-            while ((match = jsonRegex.exec(buffer)) !== null) {
-                try {
-                    const jsonData = JSON.parse(match[0]);
-
-                    // Handle phase changes
-                    if (jsonData.phase) {
-                        let newPhase;
-                        switch(jsonData.phase) {
-                            case 'downloading':
-                                newPhase = 'encoding';
-                                break;
-                            case 'converting':
-                                newPhase = 'converting';
-                                // Start simulated progress for converting phase
-                                if (convertingInterval) clearInterval(convertingInterval);
-                                convertingProgress = 0;
-                                convertingInterval = setInterval(() => {
-                                    convertingProgress += 1;
-                                    if (convertingProgress <= 95) {
-                                        event.sender.send('download-progress', convertingProgress);
-                                    }
-                                }, 100);
-                                break;
-                            default:
-                                newPhase = jsonData.phase;
-                        }
-                        
-                        if (newPhase !== currentPhase) {
-                            currentPhase = newPhase;
-                            event.sender.send('phase-change', currentPhase);
-                        }
+      const downloaderPath = app.isPackaged 
+        ? path.join(process.resourcesPath, 'downloader.exe')
+        : path.join(__dirname, 'downloader.exe');
+      const childProcess = spawn(downloaderPath, [
+        JSON.stringify(options)
+      ]);
+  
+      let lastResult = null;
+      let buffer = '';
+      let currentPhase = 'processing';
+      let convertingProgress = 0;
+      let convertingInterval;
+  
+      childProcess.stdout.on('data', (data) => {
+        const output = data.toString();
+        buffer += output;
+  
+        let match;
+        const jsonRegex = /\{[^}]*\}/g;
+  
+        while ((match = jsonRegex.exec(buffer)) !== null) {
+          try {
+            const jsonData = JSON.parse(match[0]);
+  
+            // Handle phase changes
+            if (jsonData.phase) {
+              let newPhase;
+              switch(jsonData.phase) {
+                case 'downloading':
+                  newPhase = 'encoding';
+                  break;
+                case 'converting':
+                  newPhase = 'converting';
+                  // Start simulated progress for converting phase
+                  if (convertingInterval) clearInterval(convertingInterval);
+                  convertingProgress = 0;
+                  convertingInterval = setInterval(() => {
+                    convertingProgress += 1;
+                    if (convertingProgress <= 95) {
+                      event.sender.send('download-progress', options.id, convertingProgress);
                     }
-
-                    // Handle progress updates
-                    if (jsonData.progress !== undefined) {
-                        const currentProgress = parseFloat(jsonData.progress);
-                        if (currentPhase === 'encoding') {
-                            event.sender.send('download-progress', currentProgress);
-                        }
-                    }
-
-                    if (jsonData.success !== undefined) {
-                        if (convertingInterval) {
-                            clearInterval(convertingInterval);
-                        }
-                        lastResult = jsonData;
-                    }
-
-                    buffer = buffer.slice(match.index + match[0].length);
-                } catch (jsonError) {
-                    console.warn('Partial or invalid JSON:', match[0], jsonError);
-                }
+                  }, 100);
+                  break;
+                default:
+                  newPhase = jsonData.phase;
+              }
+              
+              if (newPhase !== currentPhase) {
+                currentPhase = newPhase;
+                event.sender.send('phase-change', options.id, currentPhase);
+              }
             }
-        });
-
-        childProcess.stderr.on('data', (data) => {
-            console.error('Python error:', data.toString().trim());
-        });
-
-        childProcess.on('close', (code) => {
-            if (convertingInterval) {
+  
+            // Handle progress updates
+            if (jsonData.progress !== undefined) {
+              const currentProgress = parseFloat(jsonData.progress);
+              if (currentPhase === 'encoding') {
+                event.sender.send('download-progress', options.id, currentProgress);
+              }
+            }
+  
+            if (jsonData.success !== undefined) {
+              if (convertingInterval) {
                 clearInterval(convertingInterval);
+              }
+              lastResult = jsonData;
             }
-            
-            if (code === 0 && lastResult && lastResult.success) {
-                // Ensure we show 100% at the end
-                event.sender.send('download-progress', 100);
-                resolve(lastResult);
-            } else {
-                const errorMessage = lastResult?.error || `Python script failed with code ${code}.`;
-                reject(new Error(errorMessage));
-            }
-        });
-
-        childProcess.on('error', (err) => {
-            if (convertingInterval) {
-                clearInterval(convertingInterval);
-            }
-            console.error('Failed to start Python:', err.message);
-            reject(new Error('Failed to start Python script.'));
-        });
+  
+            buffer = buffer.slice(match.index + match[0].length);
+          } catch (jsonError) {
+            console.warn('Partial or invalid JSON:', match[0], jsonError);
+          }
+        }
+      });
+  
+      childProcess.stderr.on('data', (data) => {
+        console.error('Python error:', data.toString().trim());
+      });
+  
+      childProcess.on('close', (code) => {
+        if (convertingInterval) {
+          clearInterval(convertingInterval);
+        }
+        
+        if (code === 0 && lastResult && lastResult.success) {
+          // Ensure we show 100% at the end
+          event.sender.send('download-progress', options.id, 100);
+          event.sender.send('download-complete', options.id, lastResult);
+          activeDownloads.delete(options.id);
+          resolve(lastResult);
+        } else {
+          const errorMessage = lastResult?.error || `Python script failed with code ${code}.`;
+          event.sender.send('download-error', options.id, errorMessage);
+          activeDownloads.delete(options.id);
+          reject(new Error(errorMessage));
+        }
+      });
+  
+      childProcess.on('error', (err) => {
+        if (convertingInterval) {
+          clearInterval(convertingInterval);
+        }
+        console.error('Failed to start Python:', err.message);
+        event.sender.send('download-error', options.id, 'Failed to start Python script.');
+        reject(new Error('Failed to start Python script.'));
+      });
     });
-});
+  });

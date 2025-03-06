@@ -1,3 +1,4 @@
+// components/download-management.tsx
 "use client"
 
 import { useState } from "react"
@@ -27,24 +28,20 @@ export function DownloadManagement({
   onRemove,
   onUpdateProgress,
 }: DownloadManagementProps) {
-  // Opened sheet state
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
-  // Only show the minimized downloads indicator if there are any
   if (minimizedDownloads.length === 0 && !activeDownload) {
     return null
   }
 
   return (
     <>
-      {/* Active download popup */}
       {activeDownload && (
         <div className="fixed bottom-4 right-4 z-50">
           <ActiveDownloadCard download={activeDownload} onMinimize={onMinimize} onRemove={onRemove} />
         </div>
       )}
 
-      {/* Minimized downloads indicator */}
       {minimizedDownloads.length > 0 && (
         <div className="fixed bottom-4 left-4 z-50">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -151,4 +148,3 @@ function MinimizedDownloadCard({ download, onRestore, onRemove }: MinimizedDownl
     </Card>
   )
 }
-

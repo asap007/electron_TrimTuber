@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,31 +37,48 @@ export default function DownloadPage() {
   const [quality, setQuality] = useState("360p")
   const [showAlert, setShowAlert] = useState(false)
   const [activeTab, setActiveTab] = useState("basic")
+  const [isDownloading, setIsDownloading] = useState(false)
 
-  // Navigate back if required parameters are missing
-  useEffect(() => {
-    if (!videoId || !title || !thumbnail) {
-      router.push("/")
+  const handleSelectFolder = async () => {
+    const path = await window.api.selectFolder()
+    if (path) {
+      setOutputPath(path)
     }
-  }, [videoId, title, thumbnail, router])
-
-  // Select output folder
-  const handleSelectFolder = () => {
-    // In a real app, this would use Electron's dialog
-    // For now we'll just simulate it
-    setOutputPath("/Users/username/Downloads")
   }
 
-  // Start download
-  const handleStartDownload = () => {
+  const handleStartDownload = async () => {
     if (!outputPath) {
       setShowAlert(true)
       return
     }
 
-    // In a real app, this would trigger the actual download
-    // For now, simulate successful download by redirecting
-    router.push("/downloads")
+    setIsDownloading(true)
+
+    const downloadOptions = {
+      videoId,
+      title,
+      thumbnail,
+      quality,
+      format,
+      outputPath,
+      startTime: timeRange[0],
+      endTime: timeRange[1],
+      status: "processing",
+      progress: 0,
+      phase: "processing",
+      id: `download-${Date.now()}` // Generate a unique ID for the download
+    }
+
+    try {
+      // Start the download without waiting for it to complete
+      await window.api.startDownload(downloadOptions)
+
+      // Redirect to the downloads page after a short delay to allow UI update
+      setTimeout(() => router.push("/downloads"), 100)
+    } catch (error) {
+      console.error("Download error:", error)
+      setIsDownloading(false)
+    }
   }
 
   if (!videoId || !title || !thumbnail) {
@@ -270,9 +287,14 @@ export default function DownloadPage() {
               </div>
 
               {/* Download Button */}
-              <Button size="lg" onClick={handleStartDownload} className="w-full mt-6">
+              <Button 
+                size="lg" 
+                onClick={handleStartDownload} 
+                className="w-full mt-6"
+                disabled={isDownloading}
+              >
                 <Download className="h-5 w-5 mr-2" />
-                Download Now
+                {isDownloading ? 'Starting Download...' : 'Download Now'}
               </Button>
             </CardContent>
           </Card>
@@ -296,4 +318,3 @@ export default function DownloadPage() {
     </div>
   )
 }
-
