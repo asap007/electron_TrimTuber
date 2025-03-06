@@ -49,7 +49,6 @@ export default function DownloadsPage() {
     }
 
     const completeListener = (result) => {
-      // Show notification for completed download
       toast({
         title: "Download Complete",
         description: `${result.title || 'Video'} has been downloaded successfully.`,
@@ -57,7 +56,15 @@ export default function DownloadsPage() {
         duration: 5000,
       })
       
-      setCompletedDownloads((prev) => [...prev, result])
+      setCompletedDownloads((prev) => {
+        // Check if this download ID already exists in the completed list
+        const exists = prev.some(download => download.id === result.id);
+        if (exists) {
+          return prev; // Don't add it again
+        }
+        return [...prev, result]; // Add it if it doesn't exist
+      })
+      
       setActiveDownloads((prev) => prev.filter((download) => download.id !== result.id))
     }
 
