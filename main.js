@@ -120,23 +120,65 @@ ipcMain.handle('select-folder', async () => {
     return !result.canceled ? result.filePaths[0] : null;
 });
 
-ipcMain.handle('open-file', async (event, path) => {
+ipcMain.handle('open-file', async (event, filePath) => {
     try {
-        await shell.openPath(path);
+      console.log(`Attempting to open file: ${filePath}`);
+      
+      // Check if path exists and is a file
+      const fs = require('fs');
+      if (!fs.existsSync(filePath)) {
+        console.error(`File does not exist: ${filePath}`);
+        throw new Error(`File does not exist: ${filePath}`);
+      }
+      
+      const stats = fs.statSync(filePath);
+      if (!stats.isFile()) {
+        console.error(`Path is not a file: ${filePath}`);
+        throw new Error(`Path is not a file: ${filePath}`);
+      }
+      
+      const result = await shell.openPath(filePath);
+      if (result !== "") {
+        console.error(`shell.openPath returned: ${result}`);
+        throw new Error(`Failed to open file: ${result}`);
+      }
+      return true;
     } catch (error) {
-        console.error('Error opening file:', error);
-        throw error;
+      console.error('Error opening file:', error);
+      throw error;
     }
-});
-
-ipcMain.handle('open-folder', async (event, path) => {
+  });
+  
+  ipcMain.handle('open-folder', async (event, folderPath) => {
     try {
-        await shell.openPath(path);
+      console.log(`Attempting to open folder: ${folderPath}`);
+      
+      // Check if path exists
+      const fs = require('fs');
+      if (!fs.existsSync(folderPath)) {
+        console.error(`Folder does not exist: ${folderPath}`);
+        throw new Error(`Folder does not exist: ${folderPath}`);
+      }
+      
+      // Make sure it's a directory
+      const stats = fs.statSync(folderPath);
+      if (!stats.isDirectory()) {
+        console.error(`Path is not a directory: ${folderPath}`);
+        folderPath = path.dirname(folderPath); // If it's a file, get its directory
+        console.log(`Using parent directory instead: ${folderPath}`);
+      }
+      
+      const result = await shell.openPath(folderPath);
+      if (result !== "") {
+        console.error(`shell.openPath returned: ${result}`);
+        throw new Error(`Failed to open folder: ${result}`);
+      }
+      return true;
     } catch (error) {
-        console.error('Error opening folder:', error);
-        throw error;
+      console.error('Error opening folder:', error);
+      throw error;
     }
-});
+  });
 
 ipcMain.handle('start-download', async (event, options) => {
 
@@ -235,6 +277,8 @@ ipcMain.handle('start-download', async (event, options) => {
           event.sender.send('download-complete', {
             ...options,
             ...lastResult,
+            outputPath: lastResult.path, // Full path to the file
+            outputFolder: path.dirname(lastResult.path), // Directory containing the file
             completedAt: new Date().toISOString()
           });
           activeDownloads.delete(options.id);

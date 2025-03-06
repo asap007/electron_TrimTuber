@@ -12,6 +12,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function DownloadsPage() {
+  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [activeDownloads, setActiveDownloads] = useState([])
   const [completedDownloads, setCompletedDownloads] = useState([])
