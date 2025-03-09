@@ -14,6 +14,8 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import Link from "next/link"
+import Image from 'next/image'
+import logoImage from '../public/logo.png'
 import { usePathname } from "next/navigation"
 
 export function AppSidebar() {
@@ -33,7 +35,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="flex items-center p-4">
         <div className="flex items-center space-x-2">
-          <img src="/logo.png" alt="TrimTuber Logo" className="w-10 h-10 rounded" />
+          <Image src={logoImage} alt="TrimTuber Logo" width={40} height={40} className="rounded" />
           <h1 className="text-xl font-bold">TrimTuber</h1>
         </div>
       </SidebarHeader>

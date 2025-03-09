@@ -1,12 +1,12 @@
-// app/search/page.tsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { VideoGrid } from "@/components/video-grid"
 import { SearchIcon } from "lucide-react"
 
-export default function SearchPage() {
+// Create a client component that uses useSearchParams
+function SearchContent() {
   const searchParams = useSearchParams()
   const query = searchParams.get("q") || ""
   
@@ -95,5 +95,29 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  )
+}
+
+// Loading fallback component
+function SearchFallback() {
+  return (
+    <div className="container py-8">
+      <div className="flex items-center gap-2 mb-6">
+        <SearchIcon className="text-primary" />
+        <h2 className="text-2xl font-semibold">Search</h2>
+      </div>
+      <div className="text-center py-10">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto"></div>
+      </div>
+    </div>
+  )
+}
+
+// Main page component with Suspense
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<SearchFallback />}>
+      <SearchContent />
+    </Suspense>
   )
 }

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrimTuber Update</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            user-select: none;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        header {
+            background-color: #2563eb;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            -webkit-app-region: drag;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            -webkit-app-region: no-drag;
+        }
+
+        .container {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .update-info {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 400;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .version-info {
+            margin: 20px 0;
+            background-color: #e9effd;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background-color: #eee;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #2563eb;
+            transition: width 0.3s ease-in-out;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+        }
+
+        .download-status {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .status-downloading, .status-downloaded {
+            display: none;
+        }
+
+        .logo {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 15px auto;
+            display: block;
+        }
+
+        .version {
+            font-size: 14px;
+            color: #6b7280;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TrimTuber Update</h1>
+        <button class="close-btn" id="closeBtn">✖</button>
+    </header>
+
+    <div class="container">
+        <div class="update-info">
+            <img src="assets/logo.png" alt="TrimTuber Logo" class="logo">
+            <h2>A new version is available!</h2>
+            
+            <div class="version-info">
+                <p class="version" id="currentVersion">Current version: <span id="currentVersionText">-</span></p>
+                <p class="version" id="newVersion">New version: <span id="newVersionText">-</span></p>
+                <p class="version" id="releaseDate">Released on: <span id="releaseDateText">-</span></p>
+            </div>
+            
+            <p>Would you like to download and install it now?</p>
+            
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="download-status">
+                    <span class="status-downloading" id="downloadingStatus">Downloading... <span id="progressText">0%</span></span>
+                    <span class="status-downloaded" id="downloadedStatus">Download complete! Ready to install.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="buttons" id="initialButtons">
+            <button class="btn btn-secondary" id="skipBtn">Later</button>
+            <button class="btn btn-primary" id="downloadBtn">Download Update</button>
+        </div>
+
+        <div class="buttons" id="installButtons" style="display: none;">
+            <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
+            <button class="btn btn-primary" id="installBtn">Install Now</button>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        // Elements
+        const closeBtn = document.getElementById('closeBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const installBtn = document.getElementById('installBtn');
+        const initialButtons = document.getElementById('initialButtons');
+        const installButtons = document.getElementById('installButtons');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const downloadingStatus = document.getElementById('downloadingStatus');
+        const downloadedStatus = document.getElementById('downloadedStatus');
+        const currentVersionText = document.getElementById('currentVersionText');
+        const newVersionText = document.getElementById('newVersionText');
+        const releaseDateText = document.getElementById('releaseDateText');
+        
+        // Event listeners
+        closeBtn.addEventListener('click', () => {
+            ipcRenderer.send('skip-update');
+        });
+        
+        skipBtn.addEventListener('click', () => {
+            ipcRenderer.send('skip-update');
+        });
+        
+        downloadBtn.addEventListener('click', () => {
+            initialButtons.style.display = 'none';
+            progressContainer.style.display = 'block';
+            downloadingStatus.style.display = 'inline';
+            ipcRenderer.send('start-download');
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            ipcRenderer.send('skip-update');
+        });
+        
+        installBtn.addEventListener('click', () => {
+            ipcRenderer.send('install-update');
+        });
+        
+        // IPC events
+        ipcRenderer.on('update-available', (event, info) => {
+            currentVersionText.textContent = info.currentVersion;
+            newVersionText.textContent = info.version;
+            
+            // Format date if available
+            if (info.releaseDate) {
+                const date = new Date(info.releaseDate);
+                releaseDateText.textContent = date.toLocaleDateString();
+            } else {
+                releaseDateText.textContent = 'Today';
+            }
+        });
+        
+        ipcRenderer.on('download-progress', (event, progressObj) => {
+            const percent = Math.floor(progressObj.percent);
+            progressFill.style.width = `${percent}%`;
+            progressText.textContent = `${percent}%`;
+        });
+        
+        ipcRenderer.on('update-downloaded', () => {
+            downloadingStatus.style.display = 'none';
+            downloadedStatus.style.display = 'inline';
+            progressFill.style.width = '100%';
+            
+            initialButtons.style.display = 'none';
+            installButtons.style.display = 'flex';
+        });
+    </script>
+</body>
+</html>

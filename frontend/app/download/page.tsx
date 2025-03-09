@@ -211,7 +211,15 @@ export default function DownloadPage() {
                         <span>Trim Video</span>
                       </div>
                     </div>
-                    <Slider value={timeRange} max={duration} step={1} onValueChange={setTimeRange} />
+                    
+                    <Slider 
+                      value={timeRange} 
+                      max={duration} 
+                      step={1} 
+                      onValueChange={setTimeRange} 
+                      minStepsBetweenThumbs={1}
+                    />
+                    
                     <div className="flex justify-between">
                       <div className="text-sm">
                         Start: <span className="font-medium">{formatDuration(timeRange[0])}</span>

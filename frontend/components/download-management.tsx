@@ -107,8 +107,8 @@ function ActiveDownloadCard({ download, onMinimize, onRemove }: ActiveDownloadCa
           </Button>
         </div>
       </div>
-      <Progress value={download.progress} className="h-2" />
-      <div className="mt-2 text-right text-sm text-muted-foreground">{download.progress}%</div>
+      <Progress value={Math.round(download.progress)} className="h-2" />
+      <div className="mt-2 text-right text-sm text-muted-foreground">{Math.round(download.progress)}%</div>
     </Card>
   )
 }
@@ -132,7 +132,7 @@ function MinimizedDownloadCard({ download, onRestore, onRemove }: MinimizedDownl
         </div>
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-medium line-clamp-1">{download.title}</h4>
-          <Progress value={download.progress} className="h-1.5 mt-1" />
+          <Progress value={Math.round(download.progress)} className="h-1.5 mt-1" />
         </div>
         <div className="flex gap-1">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onRestore(download.id)}>

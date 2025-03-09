@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowDownToLine, History, Clock, CheckCircle } from "lucide-react"
@@ -9,7 +9,28 @@ import Link from "next/link"
 import { useDownloads } from "@/lib/contexts/download-context"
 import { useSearchParams } from "next/navigation"
 
-export default function DownloadsPage() {
+// Loading fallback component
+function DownloadsFallback() {
+  return (
+    <div className="container py-8">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <ArrowDownToLine className="text-primary" />
+          <h2 className="text-2xl font-semibold">Downloads</h2>
+        </div>
+      </div>
+      <div className="w-full">
+        <div className="grid w-full grid-cols-3 mb-6">
+          <div className="skeleton h-10 rounded"></div>
+        </div>
+        <DownloadsSkeleton count={3} />
+      </div>
+    </div>
+  )
+}
+
+// Main content that uses useSearchParams
+function DownloadsContent() {
   const { 
     activeDownloads, 
     completedDownloads, 
@@ -87,14 +108,14 @@ export default function DownloadsPage() {
                         <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                           <div
                             className="bg-primary h-2 rounded-full"
-                            style={{ width: `${download.progress || 0}%` }}
+                            style={{ width: `${Math.round(download.progress) || 0}%` }}
                           ></div>
                         </div>
                         <div className="flex justify-between mt-1">
                           <span className="text-sm text-gray-500">
                             {download.phase || "Preparing"}
                           </span>
-                          <span className="text-sm font-medium">{download.progress || 0}%</span>
+                          <span className="text-sm font-medium">{Math.round(download.progress) || 0}%</span>
                         </div>
                       </div>
                     </div>
@@ -253,6 +274,15 @@ export default function DownloadsPage() {
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function DownloadsPage() {
+  return (
+    <Suspense fallback={<DownloadsFallback />}>
+      <DownloadsContent />
+    </Suspense>
   )
 }
 

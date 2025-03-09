@@ -1,0 +1,106 @@
+{
+  "pages": {
+    "/_not-found/page": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/chunks/app/_not-found/page-57dcda1edda59780.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/css/665fb7bda59ff6e6.css",
+      "static/chunks/203-e69dfb597d230f35.js",
+      "static/chunks/648-f60cfae8eafd1821.js",
+      "static/chunks/23-7d6161938e93697d.js",
+      "static/chunks/889-da1d1751ca9a8ba0.js",
+      "static/chunks/642-07f26d5879623e54.js",
+      "static/chunks/770-b6e1cd4a1baa4510.js",
+      "static/chunks/app/layout-17631221afeef1ab.js"
+    ],
+    "/category/gaming/page": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/chunks/203-e69dfb597d230f35.js",
+      "static/chunks/648-f60cfae8eafd1821.js",
+      "static/chunks/app/category/gaming/page-f2c3bd67dc11be83.js"
+    ],
+    "/category/music/page": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/chunks/203-e69dfb597d230f35.js",
+      "static/chunks/648-f60cfae8eafd1821.js",
+      "static/chunks/app/category/music/page-2fb3ca9ff4fbb7b2.js"
+    ],
+    "/category/sports/page": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/chunks/203-e69dfb597d230f35.js",
+      "static/chunks/648-f60cfae8eafd1821.js",
+      "static/chunks/app/category/sports/page-56045a52fa21f525.js"
+    ],
+    "/download/page": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/chunks/203-e69dfb597d230f35.js",
+      "static/chunks/23-7d6161938e93697d.js",
+      "static/chunks/889-da1d1751ca9a8ba0.js",
+      "static/chunks/402-433f9e7eee83ff5e.js",
+      "static/chunks/app/download/page-d480e21f0ca7f1c0.js"
+    ],
+    "/download/loading": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/chunks/app/download/loading-1c3cb3b286f4c9f2.js"
+    ],
+    "/downloads/page": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/chunks/203-e69dfb597d230f35.js",
+      "static/chunks/648-f60cfae8eafd1821.js",
+      "static/chunks/23-7d6161938e93697d.js",
+      "static/chunks/770-b6e1cd4a1baa4510.js",
+      "static/chunks/app/downloads/page-0c7f2e335d869be5.js"
+    ],
+    "/page": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/chunks/203-e69dfb597d230f35.js",
+      "static/chunks/648-f60cfae8eafd1821.js",
+      "static/chunks/app/page-f863e9d3e78db4e8.js"
+    ],
+    "/search/page": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/chunks/203-e69dfb597d230f35.js",
+      "static/chunks/648-f60cfae8eafd1821.js",
+      "static/chunks/app/search/page-37b099f2114f7c09.js"
+    ],
+    "/search/layout": [
+      "static/chunks/webpack-19a384338f044d80.js",
+      "static/chunks/fd9d1056-0d21245a7a9a5d6c.js",
+      "static/chunks/117-72ef4de8fda04628.js",
+      "static/chunks/main-app-5857b1b9eb854464.js",
+      "static/chunks/app/search/layout-72e25ef474832e73.js"
+    ]
+  }
+}
