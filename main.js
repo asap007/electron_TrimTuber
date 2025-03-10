@@ -1,25 +1,18 @@
-const { app, BrowserWindow, ipcMain, Menu, dialog } = require('electron');
+// main.js
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const activeDownloads = new Map();
 const path = require('path');
+const { dialog } = require('electron');
 const { spawn, exec } = require('child_process');
 const { shell } = require('electron');
 const fs = require('fs');
 const { net } = require('electron');
-const { autoUpdater } = require('electron-updater');
-const log = require('electron-log');
-
-// Configure logging
-log.transports.file.level = 'info';
-autoUpdater.logger = log;
-autoUpdater.autoDownload = false;
-autoUpdater.autoInstallOnAppQuit = true;
 
 // Store references to our servers and window
 let nextjsProcess = null;
 let mainWindow = null;
 let isNextJsReady = false;
 let loadingWindow = null;
-let updateWindow = null;
 let nextjsPort = 47390;
 let isShuttingDown = false;
 
@@ -39,27 +32,6 @@ function createLoadingWindow() {
 
   loadingWindow.loadFile(path.join(__dirname, 'loading.html'));
   loadingWindow.center();
-}
-
-// Create update notification window
-function createUpdateWindow() {
-  updateWindow = new BrowserWindow({
-    width: 500,
-    height: 400,
-    frame: false,
-    resizable: false,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    },
-    icon: path.join(__dirname, 'assets', 'logo.png'),
-  });
-
-  updateWindow.loadFile(path.join(__dirname, 'update.html'));
-  updateWindow.center();
-  updateWindow.on('closed', () => {
-    updateWindow = null;
-  });
 }
 
 // Check if a port is in use
@@ -282,60 +254,8 @@ function checkServerConnectivity(url, maxAttempts = 30, interval = 1000) {
   });
 }
 
-// Auto updater event handlers
-function setupAutoUpdater() {
-  autoUpdater.on('checking-for-update', () => {
-    log.info('Checking for update...');
-  });
-
-  autoUpdater.on('update-available', (info) => {
-    log.info('Update available:', info);
-    createUpdateWindow();
-    if (updateWindow) {
-      updateWindow.webContents.on('did-finish-load', () => {
-        updateWindow.webContents.send('update-available', {
-          version: info.version,
-          releaseDate: info.releaseDate,
-          currentVersion: app.getVersion()
-        });
-      });
-    }
-  });
-
-  autoUpdater.on('update-not-available', (info) => {
-    log.info('Update not available:', info);
-  });
-
-  autoUpdater.on('error', (err) => {
-    log.error('Error in auto-updater:', err);
-  });
-
-  autoUpdater.on('download-progress', (progressObj) => {
-    log.info(`Download progress: ${progressObj.percent}%`);
-    if (updateWindow) {
-      updateWindow.webContents.send('download-progress', progressObj);
-    }
-  });
-
-  autoUpdater.on('update-downloaded', (info) => {
-    log.info('Update downloaded:', info);
-    if (updateWindow) {
-      updateWindow.webContents.send('update-downloaded');
-    }
-  });
-}
-
 // Initialize the app
 app.whenReady().then(async () => {
-  setupAutoUpdater();
-  
-  // Check for updates
-  try {
-    await autoUpdater.checkForUpdates();
-  } catch (error) {
-    log.error('Failed to check for updates:', error);
-  }
-  
   const isDev = process.env.NODE_ENV === 'development';
   
   if (isDev) {
@@ -384,24 +304,6 @@ app.whenReady().then(async () => {
       console.error('Failed to start Next.js server:', error);
       app.quit();
     }
-  }
-});
-
-// Handle IPC messages from update window
-ipcMain.on('start-download', () => {
-  log.info('Starting update download');
-  autoUpdater.downloadUpdate();
-});
-
-ipcMain.on('install-update', () => {
-  log.info('Installing update now');
-  autoUpdater.quitAndInstall(true, true);
-});
-
-ipcMain.on('skip-update', () => {
-  log.info('User skipped update');
-  if (updateWindow) {
-    updateWindow.close();
   }
 });
 
