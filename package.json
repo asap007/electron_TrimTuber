@@ -1,6 +1,6 @@
 {
   "name": "TrimTuber",
-  "version": "3.0.0",
+  "version": "3.2.0",
   "description": "Trim and process YouTube videos with ease.",
   "main": "main.js",
   "scripts": {
@@ -57,6 +57,13 @@
       "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
       "!**/{appveyor.yml,.travis.yml,circle.yml}",
       "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "asap007",
+        "repo": "TrimTuber"
+      }
     ]
   },
   "devDependencies": {
@@ -72,13 +79,9 @@
     "child_process": "^1.0.2",
     "cross-env": "^7.0.3",
     "electron-log": "^5.3.2",
+    "electron-store": "^10.0.1",
     "electron-updater": "^6.3.9",
     "lodash": "^4.17.21",
     "util": "^0.12.5"
-  },
-  "publish": [{
-    "provider": "github",
-    "owner": "asap007",
-    "repo": "TrimTuber"
-  }]
+  }
 }

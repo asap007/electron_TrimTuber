@@ -7,8 +7,11 @@ const { spawn, exec } = require('child_process');
 const { shell } = require('electron');
 const fs = require('fs');
 const { net } = require('electron');
+const { init: initUpdater, checkForUpdates, updateWindow } = require('./updater');
+const log = require('electron-log');
 
-// Store references to our servers and window
+log.transports.file.level = 'info';
+
 let nextjsProcess = null;
 let mainWindow = null;
 let isNextJsReady = false;
@@ -16,8 +19,10 @@ let loadingWindow = null;
 let nextjsPort = 47390;
 let isShuttingDown = false;
 
-// Create a loading window to show while Next.js server starts
 function createLoadingWindow() {
+  if (updateWindow) {
+    return;
+  }
   loadingWindow = new BrowserWindow({
     width: 400,
     height: 300,
@@ -29,12 +34,84 @@ function createLoadingWindow() {
     },
     icon: path.join(__dirname, 'assets', 'logo.png'),
   });
-
+  
   loadingWindow.loadFile(path.join(__dirname, 'loading.html'));
   loadingWindow.center();
+  
+  initializeApp();
 }
 
-// Check if a port is in use
+async function initializeApp() {
+  if (process.env.NODE_ENV !== 'development') {
+    log.info('Checking for updates during startup...');
+    
+    try {
+      const updateAvailable = await checkForUpdates();
+      if (updateAvailable) {
+        log.info('Update found, update window will handle the flow');
+        if (loadingWindow) {
+          loadingWindow.close();
+          loadingWindow = null;
+        }
+        return; // Exit initialization as update process will take over
+      } else {
+        log.info('No updates available, continuing with app startup');
+        // Close the update window if it exists (no update found)
+        if (updateWindow) {
+          updateWindow.close();
+          updateWindow = null;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for updates:', error);
+      // Continue with startup even if update check fails
+      if (updateWindow) {
+        updateWindow.close();
+        updateWindow = null;
+      }
+    }
+  }
+  
+  // Proceed with normal app startup
+  try {
+    await freePortIfNeeded(nextjsPort);
+    await startNextJsServer();
+    await checkServerConnectivity(`http://localhost:${nextjsPort}`);
+    createWindow();
+  } catch (error) {
+    console.error('Failed to start app:', error);
+    app.quit();
+  }
+}
+
+async function freePortIfNeeded(port) {
+  const portInUse = await isPortInUse(port);
+  if (portInUse) {
+    console.log(`Port ${port} is already in use. Attempting to free it...`);
+    
+    if (process.platform === 'win32') {
+      try {
+        exec(`for /f "tokens=5" %a in ('netstat -aon ^| findstr :${port}') do taskkill /F /PID %a`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (e) {
+        console.error('Error freeing port on Windows:', e);
+      }
+    } else {
+      try {
+        exec(`lsof -i :${port} | grep LISTEN | awk '{print $2}' | xargs kill -9`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (e) {
+        console.error('Error freeing port on Unix:', e);
+      }
+    }
+    
+    const stillInUse = await isPortInUse(port);
+    if (stillInUse) {
+      throw new Error(`Could not free port ${port}`);
+    }
+  }
+}
+
 function isPortInUse(port) {
   return new Promise((resolve) => {
     const testServer = require('net').createServer()
@@ -47,14 +124,12 @@ function isPortInUse(port) {
   });
 }
 
-// Start Next.js server in production
 async function startNextJsServer() {
   return new Promise(async (resolve, reject) => {
     const nextServerPath = app.isPackaged
       ? path.join(process.resourcesPath, 'frontend', 'standalone', 'server.js')
       : path.join(__dirname, 'frontend', 'standalone', 'server.js');
     
-    // Check if the server file exists
     if (!fs.existsSync(nextServerPath)) {
       console.error(`Next.js server not found at: ${nextServerPath}`);
       reject(new Error(`Next.js server not found at: ${nextServerPath}`));
@@ -63,22 +138,18 @@ async function startNextJsServer() {
 
     console.log('Starting Next.js standalone server...');
     
-    // Change directory to the standalone folder and run Node
     const serverDir = path.dirname(nextServerPath);
     
-    // Let the server use its default port of 47390 (don't override with PORT env var)
     nextjsProcess = exec('node server.js', {
       cwd: serverDir,
       env: {
         ...process.env,
-        // No PORT override - let it use the default from server.js
       }
     });
 
     nextjsProcess.stdout.on('data', (data) => {
       console.log('Next.js server:', data.toString());
       
-      // Look for message indicating server started
       if (data.toString().includes('ready started')) {
         console.log('Next.js server is ready');
         isNextJsReady = true;
@@ -89,7 +160,6 @@ async function startNextJsServer() {
     nextjsProcess.stderr.on('data', (data) => {
       console.error('Next.js server error:', data.toString());
       
-      // If we see a port in use error, try again with a different port
       if (data.toString().includes('EADDRINUSE') && !isNextJsReady) {
         console.log('Port in use, server failed to start');
         reject(new Error('Port already in use'));
@@ -101,7 +171,6 @@ async function startNextJsServer() {
       reject(error);
     });
 
-    // Set a timeout in case we don't see the ready message
     setTimeout(() => {
       if (!isNextJsReady) {
         console.log('Next.js server started (timeout reached)');
@@ -112,7 +181,6 @@ async function startNextJsServer() {
   });
 }
 
-// Properly terminate the Next.js process
 function terminateNextJsServer() {
   return new Promise((resolve, reject) => {
     if (!nextjsProcess) {
@@ -122,7 +190,6 @@ function terminateNextJsServer() {
 
     console.log('Terminating Next.js server process...');
     
-    // Set a timeout for the kill operation
     const killTimeout = setTimeout(() => {
       console.log('Force killing Next.js process...');
       if (process.platform === 'win32') {
@@ -137,7 +204,6 @@ function terminateNextJsServer() {
       }
     }, 5000);
 
-    // Try graceful shutdown first
     if (process.platform === 'win32') {
       exec(`taskkill /pid ${nextjsProcess.pid} /T`, (error) => {
         if (error) {
@@ -152,7 +218,6 @@ function terminateNextJsServer() {
         }
       });
     } else {
-      // For non-Windows platforms
       nextjsProcess.on('exit', () => {
         clearTimeout(killTimeout);
         resolve();
@@ -173,7 +238,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    show: false, // Don't show until loaded
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -184,11 +249,10 @@ function createWindow() {
 
   Menu.setApplicationMenu(null);
   
-  // For Next.js app development/production
   const isDev = process.env.NODE_ENV === 'development';
   const startUrl = isDev 
     ? 'http://localhost:4000' 
-    : `http://localhost:${nextjsPort}`; // Use the default port from server.js
+    : `http://localhost:${nextjsPort}`;
   
   mainWindow.loadURL(startUrl);
 
@@ -204,7 +268,6 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Handle window close event properly
   mainWindow.on('close', async (e) => {
     if (!isShuttingDown && !isDev) {
       e.preventDefault();
@@ -213,14 +276,12 @@ function createWindow() {
       console.log('Window closing - cleaning up resources...');
       await terminateNextJsServer();
       
-      // Now actually close the window and quit the app
       mainWindow.destroy();
       app.quit();
     }
   });
 }
 
-// Check for server connectivity
 function checkServerConnectivity(url, maxAttempts = 30, interval = 1000) {
   return new Promise((resolve, reject) => {
     let attempts = 0;
@@ -250,17 +311,16 @@ function checkServerConnectivity(url, maxAttempts = 30, interval = 1000) {
     };
     
     const intervalId = setInterval(checkConnection, interval);
-    checkConnection(); // Initial check
+    checkConnection();
   });
 }
 
-// Initialize the app
 app.whenReady().then(async () => {
+  initUpdater();
   const isDev = process.env.NODE_ENV === 'development';
   
   if (isDev) {
-    // In development, just create the window (assuming Next.js dev server is running)
-    nextjsPort = 4000; // Development port
+    nextjsPort = 4000;
     try {
       await checkServerConnectivity(`http://localhost:${nextjsPort}`);
       createWindow();
@@ -269,45 +329,10 @@ app.whenReady().then(async () => {
       app.quit();
     }
   } else {
-    // In production, show loading screen, start Next.js server, then create window
     createLoadingWindow();
-    
-    // First check if the port is already in use
-    const portInUse = await isPortInUse(nextjsPort);
-    if (portInUse) {
-      console.log(`Port ${nextjsPort} is already in use. Attempting to free it...`);
-      // Try to kill any process using this port
-      if (process.platform === 'win32') {
-        try {
-          exec(`for /f "tokens=5" %a in ('netstat -aon ^| findstr :${nextjsPort}') do taskkill /F /PID %a`);
-          // Wait a bit for the port to be freed
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } catch (e) {
-          console.error('Error freeing port:', e);
-        }
-      } else {
-        try {
-          exec(`lsof -i :${nextjsPort} | grep LISTEN | awk '{print $2}' | xargs kill -9`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } catch (e) {
-          console.error('Error freeing port:', e);
-        }
-      }
-    }
-    
-    try {
-      await startNextJsServer();
-      // Wait for server to be fully ready
-      await checkServerConnectivity(`http://localhost:${nextjsPort}`);
-      createWindow();
-    } catch (error) {
-      console.error('Failed to start Next.js server:', error);
-      app.quit();
-    }
   }
 });
 
-// Clean up resources when quitting
 app.on('will-quit', async (e) => {
   if (isShuttingDown) return;
   
@@ -317,7 +342,6 @@ app.on('will-quit', async (e) => {
   console.log('App will quit - cleaning up resources...');
   await terminateNextJsServer();
   
-  // Continue with app quit
   app.exit(0);
 });
 
@@ -339,7 +363,7 @@ function callPythonWorker(options) {
       ? path.join(process.resourcesPath, 'downloader.exe')
       : path.join(__dirname, 'downloader.exe');
 
-    console.log('Attempting to spawn:', downloaderPath); // Log the path
+    console.log('Attempting to spawn:', downloaderPath);
 
     const child = spawn(downloaderPath, [JSON.stringify(options)]);
     let output = '';
@@ -415,7 +439,6 @@ ipcMain.handle('open-file', async (event, filePath) => {
   try {
     console.log(`Attempting to open file: ${filePath}`);
     
-    // Check if path exists and is a file
     if (!fs.existsSync(filePath)) {
       console.error(`File does not exist: ${filePath}`);
       throw new Error(`File does not exist: ${filePath}`);
@@ -443,17 +466,15 @@ ipcMain.handle('open-folder', async (event, folderPath) => {
   try {
     console.log(`Attempting to open folder: ${folderPath}`);
     
-    // Check if path exists
     if (!fs.existsSync(folderPath)) {
       console.error(`Folder does not exist: ${folderPath}`);
       throw new Error(`Folder does not exist: ${folderPath}`);
     }
     
-    // Make sure it's a directory
     const stats = fs.statSync(folderPath);
     if (!stats.isDirectory()) {
       console.error(`Path is not a directory: ${folderPath}`);
-      folderPath = path.dirname(folderPath); // If it's a file, get its directory
+      folderPath = path.dirname(folderPath);
       console.log(`Using parent directory instead: ${folderPath}`);
     }
     
@@ -471,7 +492,6 @@ ipcMain.handle('open-folder', async (event, folderPath) => {
 
 ipcMain.handle('start-download', async (event, options) => {
   activeDownloads.set(options.id, options);
-  // Emit the new-download event to the renderer
   event.sender.send('new-download', options);
 
   return new Promise((resolve, reject) => {
@@ -499,7 +519,6 @@ ipcMain.handle('start-download', async (event, options) => {
         try {
           const jsonData = JSON.parse(match[0]);
 
-          // Handle phase changes
           if (jsonData.phase) {
             let newPhase;
             switch(jsonData.phase) {
@@ -508,7 +527,6 @@ ipcMain.handle('start-download', async (event, options) => {
                 break;
               case 'converting':
                 newPhase = 'converting';
-                // Start simulated progress for converting phase
                 if (convertingInterval) clearInterval(convertingInterval);
                 convertingProgress = 0;
                 convertingInterval = setInterval(() => {
@@ -528,7 +546,6 @@ ipcMain.handle('start-download', async (event, options) => {
             }
           }
 
-          // Handle progress updates
           if (jsonData.progress !== undefined) {
             const currentProgress = parseFloat(jsonData.progress);
             if (currentPhase === 'encoding') {
@@ -560,24 +577,20 @@ ipcMain.handle('start-download', async (event, options) => {
       }
       
       if (code === 0 && lastResult && lastResult.success) {
-        // Ensure we show 100% at the end
         event.sender.send('download-progress', options.id, 100);
         
-        // Create a complete result object with all necessary information
         const completeResult = {
           ...options,
           ...lastResult,
-          outputPath: lastResult.path, // Full path to the file
-          outputFolder: path.dirname(lastResult.path), // Directory containing the file
+          outputPath: lastResult.path,
+          outputFolder: path.dirname(lastResult.path),
           completedAt: new Date().toISOString(),
           id: options.id,
           title: options.title || lastResult.title || "Video download"
         };
         
-        // Send the event with the complete result object
         event.sender.send('download-complete', completeResult);
         
-        // Clean up the active downloads map
         activeDownloads.delete(options.id);
         resolve(lastResult);
       } else {

@@ -1,269 +1,359 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrimTuber Update</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f5f5f5;
-            color: #333;
-            user-select: none;
-            overflow: hidden;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        header {
-            background-color: #2563eb;
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            -webkit-app-region: drag;
-        }
-
-        .close-btn {
-            background: transparent;
-            border: none;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-            -webkit-app-region: no-drag;
-        }
-
-        .container {
-            padding: 20px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .update-info {
-            text-align: center;
-            padding: 20px 0;
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 400;
-        }
-
-        h2 {
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-
-        .version-info {
-            margin: 20px 0;
-            background-color: #e9effd;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        .progress-container {
-            margin: 20px 0;
-            display: none;
-        }
-
-        .progress-bar {
-            height: 10px;
-            background-color: #eee;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            width: 0%;
-            background-color: #2563eb;
-            transition: width 0.3s ease-in-out;
-        }
-
-        .buttons {
-            display: flex;
-            justify-content: space-between;
-            padding: 15px 0;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.2s ease;
-        }
-
-        .btn-primary {
-            background-color: #2563eb;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #1d4ed8;
-        }
-
-        .btn-secondary {
-            background-color: #e5e7eb;
-            color: #374151;
-        }
-
-        .btn-secondary:hover {
-            background-color: #d1d5db;
-        }
-
-        .download-status {
-            text-align: center;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
-        .status-downloading, .status-downloaded {
-            display: none;
-        }
-
-        .logo {
-            width: 64px;
-            height: 64px;
-            margin: 0 auto 15px auto;
-            display: block;
-        }
-
-        .version {
-            font-size: 14px;
-            color: #6b7280;
-            margin: 5px 0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrimTuber Update</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: transparent;
+      margin: 0;
+      padding: 0;
+      color: #333;
+      overflow: hidden;
+    }
+    
+    .container {
+      background-color: rgba(255, 255, 255, 0.95);
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      width: 480px;
+      height: 330px;
+      margin: 10px auto;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .app-info {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .app-logo {
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+    }
+    
+    .app-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .content {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .update-icon {
+      font-size: 40px;
+      margin-bottom: 15px;
+    }
+    
+    .update-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    
+    .update-message {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 20px;
+      max-width: 380px;
+      line-height: 1.5;
+    }
+    
+    .update-version {
+      font-weight: 600;
+      color: #0066cc;
+    }
+    
+    .progress-container {
+      width: 100%;
+      height: 8px;
+      background-color: #f0f0f0;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      overflow: hidden;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background-color: #0066cc;
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .btn {
+      padding: 8px 20px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-primary {
+      background-color: #0066cc;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: #0055aa;
+    }
+    
+    .btn-secondary {
+      background-color: #f0f0f0;
+      color: #333;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #e0e0e0;
+    }
+    
+    .spinner {
+      border: 3px solid rgba(0, 102, 204, 0.2);
+      border-top: 3px solid #0066cc;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>TrimTuber Update</h1>
-        <button class="close-btn" id="closeBtn">✖</button>
-    </header>
-
-    <div class="container">
-        <div class="update-info">
-            <img src="assets/logo.png" alt="TrimTuber Logo" class="logo">
-            <h2>A new version is available!</h2>
-            
-            <div class="version-info">
-                <p class="version" id="currentVersion">Current version: <span id="currentVersionText">-</span></p>
-                <p class="version" id="newVersion">New version: <span id="newVersionText">-</span></p>
-                <p class="version" id="releaseDate">Released on: <span id="releaseDateText">-</span></p>
-            </div>
-            
-            <p>Would you like to download and install it now?</p>
-            
-            <div class="progress-container" id="progressContainer">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <div class="download-status">
-                    <span class="status-downloading" id="downloadingStatus">Downloading... <span id="progressText">0%</span></span>
-                    <span class="status-downloaded" id="downloadedStatus">Download complete! Ready to install.</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="buttons" id="initialButtons">
-            <button class="btn btn-secondary" id="skipBtn">Later</button>
-            <button class="btn btn-primary" id="downloadBtn">Download Update</button>
-        </div>
-
-        <div class="buttons" id="installButtons" style="display: none;">
-            <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
-            <button class="btn btn-primary" id="installBtn">Install Now</button>
-        </div>
+  <div class="container">
+    <div class="app-info">
+      <img src="assets/logo.png" alt="TrimTuber Logo" class="app-logo">
+      <h1 class="app-title">TrimTuber</h1>
     </div>
+    
+    <!-- Checking for updates -->
+    <div id="checking" class="content">
+      <div class="spinner"></div>
+      <div class="update-title">Checking for updates...</div>
+      <div class="update-message">Please wait while we check for the latest version.</div>
+    </div>
+    
+    <!-- Update available -->
+    <div id="available" class="content hidden">
+      <div class="update-icon">🚀</div>
+      <div class="update-title">Update Available</div>
+      <div class="update-message">
+        A new version of TrimTuber is available: <span id="new-version" class="update-version">3.0.1</span>
+        <br><br>
+        Would you like to download this update now?
+      </div>
+      <div class="buttons">
+        <button id="download-btn" class="btn btn-primary">Download Update</button>
+        <button id="close-btn" class="btn btn-secondary">Close App</button>
+      </div>
+    </div>
+    
+    <!-- Downloading update -->
+    <div id="downloading" class="content hidden">
+      <div class="update-title">Downloading Update...</div>
+      <div class="update-message">Please wait while we download the latest version.</div>
+      <div class="progress-container">
+        <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+      </div>
+      <div id="progress-text">0%</div>
+    </div>
+    
+    <!-- Update downloaded -->
+    <div id="downloaded" class="content hidden">
+      <div class="update-icon">✅</div>
+      <div class="update-title">Update Ready to Install</div>
+      <div class="update-message">
+        The update has been downloaded and is ready to install.
+        <br><br>
+        You can install it now or later when you restart the app.
+      </div>
+      <div class="buttons">
+        <button id="install-btn" class="btn btn-primary">Install Now</button>
+        <button id="later-btn" class="btn btn-secondary">Install Later</button>
+      </div>
+    </div>
+    
+    <!-- Pending install -->
+    <div id="pending-install" class="content hidden">
+      <div class="update-icon">🔄</div>
+      <div class="update-title">Update Ready to Install</div>
+      <div class="update-message">
+        An update to version <span id="pending-version" class="update-version">3.0.1</span> was previously downloaded and is ready to install.
+        <br><br>
+        Would you like to install it now?
+      </div>
+      <div class="buttons">
+        <button id="install-pending-btn" class="btn btn-primary">Install Now</button>
+        <button id="later-btn-pending" class="btn btn-secondary">Install Later</button>
+      </div>
+    </div>
+    
+    <!-- No updates available -->
+    <div id="not-available" class="content hidden">
+      <div class="update-icon">👍</div>
+      <div class="update-title">You're Up to Date</div>
+      <div class="update-message">You're already using the latest version of TrimTuber.</div>
+    </div>
+    
+    <!-- Error checking for updates -->
+    <div id="error" class="content hidden">
+      <div class="update-icon">⚠️</div>
+      <div class="update-title">Update Check Failed</div>
+      <div class="update-message" id="error-message">
+        There was a problem checking for updates. Please try again later.
+      </div>
+      <div class="buttons">
+        <button id="error-close-btn" class="btn btn-secondary">Close</button>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        const { ipcRenderer } = require('electron');
-        
-        // Elements
-        const closeBtn = document.getElementById('closeBtn');
-        const skipBtn = document.getElementById('skipBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const installBtn = document.getElementById('installBtn');
-        const initialButtons = document.getElementById('initialButtons');
-        const installButtons = document.getElementById('installButtons');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
-        const downloadingStatus = document.getElementById('downloadingStatus');
-        const downloadedStatus = document.getElementById('downloadedStatus');
-        const currentVersionText = document.getElementById('currentVersionText');
-        const newVersionText = document.getElementById('newVersionText');
-        const releaseDateText = document.getElementById('releaseDateText');
-        
-        // Event listeners
-        closeBtn.addEventListener('click', () => {
-            ipcRenderer.send('skip-update');
-        });
-        
-        skipBtn.addEventListener('click', () => {
-            ipcRenderer.send('skip-update');
-        });
-        
-        downloadBtn.addEventListener('click', () => {
-            initialButtons.style.display = 'none';
-            progressContainer.style.display = 'block';
-            downloadingStatus.style.display = 'inline';
-            ipcRenderer.send('start-download');
-        });
-        
-        cancelBtn.addEventListener('click', () => {
-            ipcRenderer.send('skip-update');
-        });
-        
-        installBtn.addEventListener('click', () => {
-            ipcRenderer.send('install-update');
-        });
-        
-        // IPC events
-        ipcRenderer.on('update-available', (event, info) => {
-            currentVersionText.textContent = info.currentVersion;
-            newVersionText.textContent = info.version;
-            
-            // Format date if available
-            if (info.releaseDate) {
-                const date = new Date(info.releaseDate);
-                releaseDateText.textContent = date.toLocaleDateString();
-            } else {
-                releaseDateText.textContent = 'Today';
-            }
-        });
-        
-        ipcRenderer.on('download-progress', (event, progressObj) => {
-            const percent = Math.floor(progressObj.percent);
-            progressFill.style.width = `${percent}%`;
-            progressText.textContent = `${percent}%`;
-        });
-        
-        ipcRenderer.on('update-downloaded', () => {
-            downloadingStatus.style.display = 'none';
-            downloadedStatus.style.display = 'inline';
-            progressFill.style.width = '100%';
-            
-            initialButtons.style.display = 'none';
-            installButtons.style.display = 'flex';
-        });
-    </script>
+  <script>
+    const { ipcRenderer } = require('electron');
+    
+    // Elements
+    const checking = document.getElementById('checking');
+    const available = document.getElementById('available');
+    const downloading = document.getElementById('downloading');
+    const downloaded = document.getElementById('downloaded');
+    const pendingInstall = document.getElementById('pending-install');
+    const notAvailable = document.getElementById('not-available');
+    const error = document.getElementById('error');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const newVersion = document.getElementById('new-version');
+    const pendingVersion = document.getElementById('pending-version');
+    const errorMessage = document.getElementById('error-message');
+    
+    // Buttons
+    document.getElementById('download-btn').addEventListener('click', () => {
+      ipcRenderer.send('download-update');
+    });
+    
+    document.getElementById('close-btn').addEventListener('click', () => {
+      ipcRenderer.send('close-app');
+    });
+    
+    document.getElementById('install-btn').addEventListener('click', () => {
+      ipcRenderer.send('install-update');
+    });
+    
+    document.getElementById('later-btn').addEventListener('click', () => {
+      ipcRenderer.send('install-later');
+    });
+    
+    document.getElementById('install-pending-btn').addEventListener('click', () => {
+      ipcRenderer.send('install-update');
+    });
+    
+    document.getElementById('later-btn-pending').addEventListener('click', () => {
+      ipcRenderer.send('install-later');
+    });
+    
+    document.getElementById('error-close-btn').addEventListener('click', () => {
+      ipcRenderer.send('close-app');
+    });
+    
+    // Hide all content sections
+    function hideAllSections() {
+      checking.classList.add('hidden');
+      available.classList.add('hidden');
+      downloading.classList.add('hidden');
+      downloaded.classList.add('hidden');
+      pendingInstall.classList.add('hidden');
+      notAvailable.classList.add('hidden');
+      error.classList.add('hidden');
+    }
+    
+    // Show a specific section
+    function showSection(section) {
+      hideAllSections();
+      section.classList.remove('hidden');
+    }
+    
+    // Handle update status messages
+    ipcRenderer.on('update-status', (event, data) => {
+      console.log('Update status:', data);
+      
+      switch(data.state) {
+        case 'checking-for-update':
+          showSection(checking);
+          break;
+          
+        case 'update-available':
+          if (data.info && data.info.version) {
+            newVersion.textContent = data.info.version;
+          }
+          showSection(available);
+          break;
+          
+        case 'downloading':
+          progressBar.style.width = `${data.progress}%`;
+          progressText.textContent = `${Math.round(data.progress)}%`;
+          showSection(downloading);
+          break;
+          
+        case 'update-downloaded':
+          showSection(downloaded);
+          break;
+          
+        case 'pending-install':
+          if (data.info && data.info.version) {
+            pendingVersion.textContent = data.info.version;
+          }
+          showSection(pendingInstall);
+          break;
+          
+        case 'update-not-available':
+          showSection(notAvailable);
+          break;
+          
+        case 'error':
+          if (data.error) {
+            errorMessage.textContent = data.error;
+          } else {
+            errorMessage.textContent = 'There was a problem checking for updates. Please try again later.';
+          }
+          showSection(error);
+          break;
+      }
+    });
+    
+    // Initial state
+    showSection(checking);
+  </script>
 </body>
 </html>
